@@ -942,9 +942,19 @@ function animateSteps() {
 }
 
 async function runAnalysis() {
-  const input = document.getElementById('searchInput').value.trim();
+  const inputEl = document.getElementById('searchInput');
+  const input = inputEl.value.trim();
   const searchBar = document.getElementById('searchBar');
   const searchError = document.getElementById('searchError');
+
+  // Se o campo foi editado manualmente sem usar o autocomplete, zera os IDs
+  // para não reusar times de uma análise anterior
+  const acInput = (window._acHomeId ? (window._acHomeName||'') : '') + (window._acAwayId ? (window._acAwayName||'') : '');
+  const inputNorm = input.toLowerCase().replace(/\s+x\s+/i,' x ');
+  const homeInInput = window._acHomeName && input.toLowerCase().includes(window._acHomeName.toLowerCase());
+  const awayInInput = window._acAwayName && input.toLowerCase().includes(window._acAwayName.toLowerCase());
+  if (!homeInInput) { window._acHomeId = null; window._acHomeName = null; }
+  if (!awayInInput) { window._acAwayId = null; window._acAwayName = null; }
 
   // Validação campo vazio
   if (!input) {
@@ -1043,6 +1053,7 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
   window._resetAC = function resetSelection() {
     state = 'home'; homeTeam = null; awayTeam = null;
     window._acHomeId = null; window._acAwayId = null;
+    window._acHomeName = null; window._acAwayName = null;
     input.value = '';
     input.focus();
     closePanel();
@@ -1065,6 +1076,8 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
   function pickTeam(team) {
     if (state === 'home') {
       homeTeam = team;
+      window._acHomeId = team.id;
+      window._acHomeName = team.name;
       state = 'away';
       input.value = team.name + ' x ';
       input.focus();
@@ -1072,6 +1085,8 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
       closePanel();
     } else if (state === 'away') {
       awayTeam = team;
+      window._acAwayId = team.id;
+      window._acAwayName = team.name;
       state = 'done';
       input.value = homeTeam.name + ' x ' + team.name;
       hint.style.display = 'none';
@@ -1139,7 +1154,16 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
     if (!val.trim()) {
       state = 'home'; homeTeam = null; awayTeam = null;
       window._acHomeId = null; window._acAwayId = null;
+      window._acHomeName = null; window._acAwayName = null;
       setHint(); closePanel(); return;
+    }
+
+    // Se estava em 'done' e o usuário editou, volta pro fluxo e zera IDs
+    if (state === 'done') {
+      state = 'home'; homeTeam = null; awayTeam = null;
+      window._acHomeId = null; window._acAwayId = null;
+      window._acHomeName = null; window._acAwayName = null;
+      setHint();
     }
 
     // Detecta se já tem " x " → o que está sendo digitado é o visitante
@@ -1198,21 +1222,25 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
   window.runAnalysis = async function() {
     closePanel();
     // Salva IDs do autocomplete atual (persiste para essa análise)
-    if (homeTeam?.id) window._acHomeId = homeTeam.id;
-    if (awayTeam?.id) window._acAwayId = awayTeam.id;
+    if (homeTeam?.id) { window._acHomeId = homeTeam.id; window._acHomeName = homeTeam.name; }
+    if (awayTeam?.id) { window._acAwayId = awayTeam.id; window._acAwayName = awayTeam.name; }
     await origRunAnalysis();
   };
 
-  // Passa IDs no fetch do analyze
+  // Passa IDs no fetch do analyze — injeta diretamente no body
   const origFetch = window.fetch;
-  // Intercepta só a chamada /api/analyze para injetar os IDs
   window.fetch = function(url, opts) {
     if (typeof url === 'string' && url.includes('/api/analyze')) {
       try {
         const body = JSON.parse(opts.body);
-        // Injeta IDs se disponíveis (não zera — permite reanálise)
-        if (window._acHomeId) body.homeId = window._acHomeId;
-        if (window._acAwayId) body.awayId = window._acAwayId;
+        const inputVal = document.getElementById('searchInput')?.value || '';
+        // Só injeta ID se o nome do time ainda está presente no campo
+        if (window._acHomeId && window._acHomeName && inputVal.toLowerCase().includes(window._acHomeName.toLowerCase())) {
+          body.homeId = window._acHomeId;
+        }
+        if (window._acAwayId && window._acAwayName && inputVal.toLowerCase().includes(window._acAwayName.toLowerCase())) {
+          body.awayId = window._acAwayId;
+        }
         opts = { ...opts, body: JSON.stringify(body) };
       } catch {}
     }
@@ -1224,19 +1252,26 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
 
 // ── INTELLIGENCE TIMELINE ─────────────────────────────────────
 (function() {
-  const TIMELINE_EVENTS = [
-    { text: 'Desfalque confirmado no Corinthians — zagueiro titular fora', cls: 'red' },
-    { text: 'Odds do Over 2.5 recuaram 0.15 nas últimas 2h — mercado reagiu', cls: 'yellow' },
-    { text: 'Sensor favorece Flamengo em casa: 74% — sinal forte', cls: 'green' },
-    { text: 'Mercado de cartões aqueceu no Atletico MG x Cruzeiro', cls: 'yellow' },
-    { text: 'Palmeiras: 5 vitórias seguidas em casa — momentum alto', cls: 'green' },
-    { text: 'Red Flag: Inter de Milão com 3 jogos em 8 dias — desgaste', cls: 'red' },
-    { text: 'EV positivo detectado: Ambas Marcam no Brasileirão rodada 28', cls: 'green' },
-    { text: 'Sensor mudou de Moderado → Forte para o Vasco (visitante)', cls: 'blue' },
-    { text: 'Barcelona: titular com dúvida no treino desta manhã', cls: 'yellow' },
-    { text: 'Liverpool invicto em 11 jogos em casa — odds subestimadas', cls: 'green' },
-    { text: 'Borussia Dortmund: motivação baixa após eliminação na Champions', cls: 'red' },
-    { text: 'Gremio x Botafogo: escanteios acima da média nos últimos 4 jogos', cls: 'blue' },
+  // Gerador de sinais genéricos — sem nomes fixos de times
+  const SIGNAL_TEMPLATES = [
+    { text: 'Odds do Over 2.5 recuaram nas últimas 2h — mercado em movimento', cls: 'yellow' },
+    { text: 'Padrão de escanteios acima da média detectado nos jogos deste fim de semana', cls: 'blue' },
+    { text: 'Sensor de momentum atualizado — favorito confirmado para o próximo confronto', cls: 'green' },
+    { text: 'Mercado de cartões com volume acima do normal em 3 jogos da rodada', cls: 'yellow' },
+    { text: 'EV positivo detectado em mercado de escanteios — oportunidade identificada', cls: 'green' },
+    { text: 'Odds do Ambas Marcam subiram 0.10 nas últimas horas — atenção', cls: 'yellow' },
+    { text: 'Red Flag: time com 3 jogos em 8 dias — risco de desgaste físico', cls: 'red' },
+    { text: 'Sinal forte detectado: time mandante com 4+ vitórias consecutivas em casa', cls: 'green' },
+    { text: 'Pressão ofensiva elevada identificada no confronto do Brasileirão desta rodada', cls: 'blue' },
+    { text: 'Mercado de handicap asiático ajustado — bookmakers recalibrando favorito', cls: 'yellow' },
+    { text: 'Defesa fragilizada detectada — média de gols sofridos acima de 2.0/jogo', cls: 'red' },
+    { text: 'Sensor mudou de Moderado → Forte para o visitante nesta rodada', cls: 'blue' },
+    { text: 'Odds do resultado empate caíram 0.20 — mercado descartando X', cls: 'yellow' },
+    { text: 'Análise de motivação: equipe com objetivo classificatório urgente', cls: 'green' },
+    { text: 'Padrão identificado: confrontos equilibrados tendem a mais cartões', cls: 'blue' },
+    { text: 'Red Flag: histórico de lesões no setor defensivo desta semana', cls: 'red' },
+    { text: 'Valor esperado positivo em Under 2.5 para jogos de baixa ofensividade', cls: 'green' },
+    { text: 'Movimento de odds detectado no mercado asiático — sharp money ativo', cls: 'yellow' },
   ];
 
   const feed = document.getElementById('timelineFeed');
@@ -1248,12 +1283,12 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
     return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
   }
 
-  let pool = [...TIMELINE_EVENTS].sort(() => Math.random() - 0.5);
+  let pool = [...SIGNAL_TEMPLATES].sort(() => Math.random() - 0.5);
   let idx = 0;
   const shown = [];
 
   function addEntry() {
-    if (idx >= pool.length) { pool = [...TIMELINE_EVENTS].sort(() => Math.random() - 0.5); idx = 0; }
+    if (idx >= pool.length) { pool = [...SIGNAL_TEMPLATES].sort(() => Math.random() - 0.5); idx = 0; }
     const ev = pool[idx++];
     const entry = document.createElement('div');
     entry.className = 'tl-entry';
@@ -1270,8 +1305,8 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
 
   // Popula com 3 entradas iniciais
   for (let i = 0; i < 3; i++) addEntry();
-  // Adiciona nova entrada a cada 6 segundos
-  setInterval(addEntry, 6000);
+  // Adiciona nova entrada a cada 8 segundos
+  setInterval(addEntry, 8000);
 })();
 
 // ── HERO PROOF COUNTER (simula crescimento ao vivo) ──────────
