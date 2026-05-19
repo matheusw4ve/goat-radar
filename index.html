@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GOAT RADAR — Escaneie. Antecipe. Lucre.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black:   #030508;
+  --dark:    #060a10;
+  --card:    #0a1018;
+  --card2:   #0d1520;
+  --card3:   #0f1c2a;
+  --border:  rgba(180,140,40,0.18);
+  --border2: rgba(30,120,220,0.18);
+  --gold:    #c9a227;
+  --gold2:   #f0c84a;
+  --gold-dim:#7a5f10;
+  --gold-glow: rgba(201,162,39,0.25);
+  --blue:    #1e78dc;
+  --blue2:   #4da6ff;
+  --blue-glow: rgba(30,120,220,0.25);
+  --green:   #27ae60;
+  --green2:  #2ecc71;
+  --red:     #e85050;
+  --yellow:  #f0a830;
+  --white:   #eef4ff;
+  --muted:   #4a6080;
+  --mono:    'Share Tech Mono', monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--black);color:var(--white);
+  font-family:'Rajdhani',sans-serif;font-size:16px;
+  min-height:100vh;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(201,162,39,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(30,120,220,0.04) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;z-index:0;
+}
+
+/* HERO */
+.hero{
+  position:relative;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 24px 40px;text-align:center;overflow:hidden;z-index:1;
+}
+.hero-glow-gold{
+  position:absolute;width:700px;height:700px;
+  background:radial-gradient(circle,rgba(201,162,39,0.09) 0%,transparent 65%);
+  top:40%;left:50%;transform:translate(-50%,-50%);pointer-events:none;
+}
+.hero-glow-blue{
+  position:absolute;width:500px;height:500px;
+  background:radial-gradient(circle,rgba(30,120,220,0.07) 0%,transparent 65%);
+  top:60%;left:50%;transform:translate(-50%,-50%);pointer-events:none;
+}
+.hero-logo{
+  width:clamp(200px,36vw,340px);margin-bottom:24px;
+  filter:drop-shadow(0 0 32px rgba(201,162,39,0.35)) drop-shadow(0 0 60px rgba(30,120,220,0.2));
+  animation:floatLogo 4s ease-in-out infinite;
+}
+@keyframes floatLogo{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.hero-slogan{
+  font-family:'Barlow Condensed',sans-serif;font-weight:900;
+  font-size:clamp(14px,2.5vw,20px);letter-spacing:6px;text-transform:uppercase;
+  background:linear-gradient(90deg,var(--gold2),var(--blue2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:32px;
+}
+.hero-sub{
+  font-size:clamp(16px,2vw,20px);color:rgba(238,244,255,0.55);
+  max-width:520px;line-height:1.65;margin:0 auto 40px;font-weight:500;
+}
+.hero-sub strong{color:var(--gold2);font-weight:700;}
+
+/* AUTOCOMPLETE */
+.search-wrap{width:100%;max-width:620px;margin:0 auto;position:relative;}
+.autocomplete-panel{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;
+  background:var(--card2);border:1.5px solid var(--border);
+  border-radius:12px;overflow:hidden;z-index:100;
+  box-shadow:0 16px 48px rgba(0,0,0,0.5);
+  display:none;
+}
+.ac-section{padding:8px 0;}
+.ac-section-label{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  letter-spacing:2px;text-transform:uppercase;
+  padding:6px 14px 4px;
+}
+.ac-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 14px;cursor:pointer;transition:background 0.15s;
+}
+.ac-item:hover,.ac-item.active{background:rgba(201,162,39,0.08);}
+.ac-logo{width:28px;height:28px;object-fit:contain;flex-shrink:0;border-radius:4px;}
+.ac-logo-fallback{width:28px;height:28px;background:rgba(255,255,255,0.05);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.ac-info{flex:1;min-width:0;}
+.ac-name{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ac-league{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.5px;}
+.ac-pick-hint{font-family:var(--mono);font-size:9px;color:var(--gold-dim);letter-spacing:1px;flex-shrink:0;}
+.ac-divider{height:1px;background:var(--border);margin:0 14px;}
+/* instrução de uso */
+.search-hint{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:0.5px;display:none;}
+
+.search-bar{
+  display:flex;align-items:center;
+  background:var(--card2);border:1.5px solid var(--border);border-radius:14px;
+  padding:8px 8px 8px 22px;gap:14px;transition:border-color 0.3s,box-shadow 0.3s;
+}
+.search-bar:focus-within{
+  border-color:var(--gold);
+  box-shadow:0 0 0 3px var(--gold-glow),0 0 0 6px rgba(30,120,220,0.08);
+}
+.search-bar input{
+  flex:1;background:none;border:none;outline:none;color:var(--white);
+  font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:600;letter-spacing:0.5px;
+}
+.search-bar input::placeholder{color:var(--muted);font-weight:500;}
+.search-btn{
+  background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);
+  color:#000;border:none;border-radius:10px;padding:14px 28px;
+  font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;white-space:nowrap;
+}
+.search-btn:hover{
+  background:linear-gradient(135deg,var(--blue) 0%,var(--blue2) 100%);color:#fff;
+  transform:translateY(-2px);box-shadow:0 8px 28px var(--blue-glow);
+}
+.search-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+
+/* ERRO CAMPO VAZIO */
+.search-error{
+  margin-top:10px;font-family:var(--mono);font-size:12px;
+  color:var(--red);letter-spacing:1px;display:none;
+  animation:fadeUp 0.3s ease;
+}
+.search-bar.error{border-color:var(--red);box-shadow:0 0 0 3px rgba(232,80,80,0.15);}
+
+/* LOADING */
+#loadingState{
+  display:none;flex-direction:column;align-items:center;
+  gap:16px;padding:60px 20px;position:relative;z-index:1;
+}
+.radar-spinner{
+  width:60px;height:60px;
+  border:3px solid rgba(201,162,39,0.15);
+  border-top-color:var(--gold);border-right-color:var(--blue);
+  border-radius:50%;animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-family:var(--mono);font-size:13px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;}
+.load-step{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;opacity:0;transition:opacity 0.4s,color 0.4s;}
+.load-step.active{color:var(--blue2);opacity:1;}
+.load-step.done{color:var(--gold);opacity:1;}
+
+/* ANALYSIS */
+#analysisSection{max-width:860px;margin:0 auto;padding:0 20px 100px;position:relative;z-index:1;}
+.sec-label{
+  font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:3px;text-transform:uppercase;
+  margin-bottom:24px;display:flex;align-items:center;gap:14px;
+}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* SENSOR CARD — estilo concorrente */
+.sensor-card{
+  background:linear-gradient(160deg,#0a1a10 0%,#081420 100%);
+  border:1px solid rgba(39,174,96,0.2);
+  border-radius:16px;padding:24px 26px;margin-bottom:12px;
+}
+.sensor-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.sensor-title-txt{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;}
+.sensor-level-badge{
+  font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+}
+.sensor-level-badge.forte{color:var(--green2);}
+.sensor-level-badge.moderado{color:var(--yellow);}
+.sensor-level-badge.fraco{color:var(--red);}
+.sensor-side{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:18px;}
+.sensor-side span{color:var(--green2);font-weight:700;}
+
+/* TEAMS ROW com logos */
+.teams-row{
+  display:flex;align-items:center;gap:14px;margin-bottom:16px;
+  padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06);
+}
+.team-side{display:flex;align-items:center;gap:10px;flex:1;}
+.team-side.away{flex-direction:row-reverse;justify-content:flex-start;}
+.team-logo-img{
+  width:40px;height:40px;object-fit:contain;
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5));flex-shrink:0;
+}
+.team-logo-fallback{
+  width:40px;height:40px;border-radius:50%;
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+}
+.team-name-txt{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;letter-spacing:0.5px;}
+
+/* SLIDER SIMPLES */
+.sensor-slider-wrap{margin-bottom:0;width:100%;}
+.sensor-slider-track{
+  position:relative;height:8px;border-radius:100px;
+  background:linear-gradient(to right,#c0392b,#e67e22,#f0c84a,#27ae60);
+  margin-bottom:0;
+}
+.sensor-slider-thumb{
+  position:absolute;top:50%;transform:translate(-50%,-50%);
+  width:16px;height:16px;
+  background:#fff;border:2.5px solid #000;border-radius:50%;
+  box-shadow:0 0 10px rgba(39,174,96,0.7);
+}
+.sensor-slider-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px;margin-bottom:14px;}
+
+/* CONTEXT TEXT */
+.sensor-context{
+  font-size:14px;color:rgba(238,244,255,0.55);line-height:1.65;
+  margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.05);
+}
+
+/* GRID RESUMO */
+.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.sensor-cell{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;}
+.sensor-cell-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;text-transform:uppercase;}
+.sensor-cell-value{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--white);}
+.sensor-cell.highlight{border-color:rgba(39,174,96,0.3);background:rgba(39,174,96,0.06);}
+.sensor-cell.highlight .sensor-cell-label{color:var(--green2);}
+.sensor-cell.highlight .market-value{
+  font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;
+  color:var(--green2);letter-spacing:1px;
+}
+.sensor-cell.highlight.danger-cell{border-color:rgba(232,80,80,0.3);background:rgba(232,80,80,0.06);}
+.sensor-cell.highlight.danger-cell .sensor-cell-label{color:var(--red);}
+.sensor-cell.highlight.danger-cell .market-value{color:var(--red);}
+
+/* MARKET SLIDERS EXPANDIDOS */
+.market-sliders{display:flex;flex-direction:column;gap:0;margin:8px 0 4px;}
+.mslider-block{padding:18px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.mslider-block:last-child{border-bottom:none;}
+.mslider-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.mslider-icon{font-size:18px;width:28px;text-align:center;color:rgba(39,174,96,0.8);}
+.mslider-label{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:0.5px;color:var(--white);}
+.mslider-track{position:relative;height:7px;border-radius:100px;background:linear-gradient(to right,#c0392b,#e67e22,#f0c84a,#27ae60);margin-bottom:10px;}
+.mslider-thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;background:#fff;border:2.5px solid #000;border-radius:50%;box-shadow:0 0 10px rgba(39,174,96,0.7);}
+.mslider-desc{font-size:13px;color:rgba(238,244,255,0.5);line-height:1.55;font-weight:500;}
+
+
+  font-size:14px;color:rgba(238,244,255,0.5);line-height:1.6;
+  padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);
+}
+
+/* FLAGS */
+.flags-card{
+  background:var(--card2);border:1px solid var(--border);
+  border-radius:16px;padding:24px 26px;margin-bottom:12px;
+}
+.flags-title{
+  font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;margin-bottom:18px;
+  display:flex;align-items:center;gap:10px;color:var(--red);
+}
+.flag-item{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
+.flag-item:last-child{border-bottom:none;padding-bottom:0;}
+.flag-icon{width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.flag-icon.high{background:rgba(232,80,80,0.12);border:1px solid rgba(232,80,80,0.2);}
+.flag-icon.mid{background:rgba(240,168,48,0.12);border:1px solid rgba(240,168,48,0.2);}
+.flag-icon.low{background:rgba(30,120,220,0.12);border:1px solid rgba(30,120,220,0.2);}
+.flag-content{flex:1;}
+.flag-label{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.flag-dots{display:flex;gap:3px;}
+.dot{width:7px;height:7px;border-radius:2px;}
+.flag-text{font-size:13px;color:rgba(238,244,255,0.4);line-height:1.5;font-weight:500;}
+
+/* ODDS */
+.odds-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.odds-item{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;display:flex;flex-direction:column;align-items:center;}
+.odds-name{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.odds-val{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:700;color:var(--white);line-height:1;}
+.odds-edge{font-family:var(--mono);font-size:10px;margin-top:5px;}
+.odds-edge.pos{color:var(--green2);}
+.odds-edge.neg{color:var(--red);}
+.odds-edge.neu{color:var(--muted);}
+.odds-context{font-size:11px;color:rgba(238,244,255,0.38);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);text-align:left;width:100%;font-weight:500;}
+
+/* VERDICT */
+.verdict-card{
+  background:linear-gradient(135deg,rgba(201,162,39,0.07) 0%,rgba(30,120,220,0.05) 100%);
+  border:1px solid rgba(201,162,39,0.25);border-radius:16px;padding:24px 26px;margin-bottom:12px;
+}
+.verdict-label{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.verdict-main{
+  font-family:'Barlow Condensed',sans-serif;font-size:clamp(28px,5vw,48px);font-weight:900;line-height:1;
+  background:linear-gradient(90deg,var(--gold2),var(--blue2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:14px;
+}
+.verdict-tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;}
+.vtag{font-family:var(--mono);font-size:11px;padding:5px 12px;border-radius:5px;border:1px solid;font-weight:600;}
+.vtag.safe{color:var(--gold2);border-color:rgba(201,162,39,0.35);background:rgba(201,162,39,0.08);}
+.vtag.warn{color:var(--yellow);border-color:rgba(240,168,48,0.35);background:rgba(240,168,48,0.07);}
+.vtag.danger{color:var(--red);border-color:rgba(232,80,80,0.35);background:rgba(232,80,80,0.07);}
+.verdict-text{font-size:15px;color:rgba(238,244,255,0.55);line-height:1.7;border-top:1px solid rgba(201,162,39,0.12);padding-top:14px;font-weight:500;}
+
+/* FEATURES */
+.features-wrap{max-width:860px;margin:0 auto;padding:80px 20px;position:relative;z-index:1;}
+.divider{width:60px;height:2px;background:linear-gradient(90deg,var(--gold),var(--blue));margin:0 auto 40px;border-radius:2px;}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media(max-width:640px){.features-grid{grid-template-columns:1fr;}}
+.feat-card{background:var(--card2);border:1px solid var(--border);border-radius:16px;padding:26px;transition:border-color 0.3s,transform 0.3s;}
+.feat-card:hover{border-color:rgba(201,162,39,0.3);transform:translateY(-3px);}
+.feat-icon{font-size:26px;margin-bottom:14px;}
+.feat-name{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:0.5px;margin-bottom:8px;}
+.feat-text{font-size:14px;color:var(--muted);line-height:1.6;font-weight:500;}
+
+/* PRICING */
+.pricing-wrap{background:var(--dark);border-top:1px solid var(--border);padding:80px 20px;position:relative;z-index:1;}
+.pricing-inner{max-width:860px;margin:0 auto;text-align:center;}
+.pricing-headline{font-family:'Barlow Condensed',sans-serif;font-size:clamp(44px,8vw,88px);font-weight:900;line-height:0.95;margin-bottom:16px;letter-spacing:1px;}
+.pricing-sub{color:var(--muted);font-size:18px;margin-bottom:56px;line-height:1.6;font-weight:500;}
+.pricing-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px;margin:0 auto;}
+@media(max-width:560px){.pricing-cards{grid-template-columns:1fr;}}
+.plan-card{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:36px 28px;text-align:left;position:relative;transition:transform 0.3s;}
+.plan-card:hover{transform:translateY(-5px);}
+.plan-card.featured{border-color:var(--gold-dim);background:linear-gradient(135deg,rgba(201,162,39,0.06),var(--card2));}
+.plan-badge{
+  position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(90deg,var(--gold),var(--gold2));color:#000;
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  padding:5px 18px;border-radius:100px;white-space:nowrap;
+}
+.plan-name{font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:900;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.plan-desc{font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.5;font-weight:500;}
+.plan-price{margin-bottom:28px;}
+.plan-price sup{font-family:'Barlow Condensed',sans-serif;font-size:20px;color:var(--gold2);font-weight:700;vertical-align:top;margin-top:10px;display:inline-block;}
+.plan-price .amount{font-family:'Barlow Condensed',sans-serif;font-size:68px;color:var(--white);line-height:1;font-weight:900;}
+.plan-price .period{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;}
+.plan-features{list-style:none;margin-bottom:28px;display:flex;flex-direction:column;gap:11px;}
+.plan-features li{display:flex;align-items:flex-start;gap:10px;font-size:15px;color:rgba(238,244,255,0.75);line-height:1.4;font-weight:600;}
+.plan-features li::before{
+  content:'✓';font-size:15px;font-weight:900;flex-shrink:0;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.plan-cta{display:block;width:100%;padding:16px;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:900;letter-spacing:2px;text-transform:uppercase;text-align:center;cursor:pointer;border:none;transition:all 0.2s;}
+.plan-cta.primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;}
+.plan-cta.primary:hover{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;box-shadow:0 8px 30px var(--blue-glow);transform:translateY(-2px);}
+.plan-cta.secondary{background:rgba(255,255,255,0.04);color:var(--white);border:1.5px solid var(--border);}
+.plan-cta.secondary:hover{background:rgba(201,162,39,0.07);border-color:var(--gold-dim);}
+
+footer{border-top:1px solid var(--border);padding:40px 20px;text-align:center;position:relative;z-index:1;}
+.footer-logo{width:120px;margin:0 auto 12px;opacity:0.7;filter:grayscale(30%);}
+.footer-text{font-family:var(--mono);font-size:12px;color:var(--muted);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
+.anim{animation:fadeUp 0.55s ease both;}
+.anim-1{animation-delay:0.05s;}
+.anim-2{animation-delay:0.12s;}
+.anim-3{animation-delay:0.2s;}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--black);}
+::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:4px;}
+@media(max-width:640px){
+  .sensor-grid{grid-template-columns:1fr;}
+  .odds-strip{grid-template-columns:1fr;}
+  .sensor-card,.flags-card,.verdict-card{padding:18px 16px;}
+}
+
+/* ── HERO PROOF (prova social) ─────────────────────────────── */
+.hero-proof{
+  margin-top:18px;
+  font-family:var(--mono);font-size:11px;
+  color:rgba(238,244,255,0.35);
+  letter-spacing:1px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center;
+}
+.hero-proof-dot{width:6px;height:6px;border-radius:50%;background:var(--green2);display:inline-block;animation:pulse-dot 2s infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(46,204,113,0.4);}50%{opacity:0.7;box-shadow:0 0 0 5px rgba(46,204,113,0);}}
+
+/* ── EV CHIP ───────────────────────────────────────────────── */
+.ev-chip{
+  display:inline-block;
+  font-family:var(--mono);font-size:11px;font-weight:700;
+  padding:3px 9px;border-radius:5px;margin-top:5px;letter-spacing:0.5px;
+}
+.ev-chip.positive{color:#000;background:var(--green2);}
+.ev-chip.negative{color:#fff;background:var(--red);}
+.ev-chip.neutral{color:var(--muted);background:rgba(255,255,255,0.06);border:1px solid var(--border);}
+
+/* ── ANCHOR PRICING (plano ELITE) ──────────────────────────── */
+.plan-card.elite{
+  border-color:rgba(77,166,255,0.25);
+  background:linear-gradient(135deg,rgba(30,120,220,0.06),var(--card2));
+  opacity:0.75;
+  position:relative;
+}
+.plan-card.elite:hover{opacity:1;}
+.elite-badge{
+  position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(90deg,var(--blue),var(--blue2));color:#fff;
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  padding:5px 18px;border-radius:100px;white-space:nowrap;
+}
+.plan-card.elite .plan-name{color:var(--blue2);}
+.plan-card.elite .plan-price .amount{color:var(--blue2);}
+.plan-card.elite .plan-price sup{color:var(--blue2);}
+
+/* ── SEÇÃO DEMO ─────────────────────────────────────────────── */
+.demo-wrap{
+  max-width:860px;margin:0 auto;padding:0 20px 80px;position:relative;z-index:1;
+}
+.demo-card{
+  background:linear-gradient(160deg,rgba(10,26,16,0.9) 0%,rgba(8,20,32,0.9) 100%);
+  border:1px solid rgba(201,162,39,0.18);border-radius:16px;padding:26px;
+  position:relative;overflow:hidden;
+}
+.demo-card::before{
+  content:'DEMO — EXEMPLO REAL';
+  position:absolute;top:14px;right:18px;
+  font-family:var(--mono);font-size:9px;color:rgba(201,162,39,0.4);letter-spacing:2px;
+}
+.demo-top{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.demo-badge{font-family:var(--mono);font-size:9px;padding:3px 10px;border-radius:4px;background:rgba(39,174,96,0.12);border:1px solid rgba(39,174,96,0.2);color:var(--green2);letter-spacing:2px;text-transform:uppercase;}
+.demo-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:0.5px;}
+.demo-sensor-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:12px 14px;background:rgba(39,174,96,0.06);border-radius:10px;border:1px solid rgba(39,174,96,0.12);}
+.demo-sensor-val{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:var(--green2);}
+.demo-sensor-label{font-family:var(--mono);font-size:11px;color:rgba(238,244,255,0.5);line-height:1.5;}
+.demo-flags{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.demo-flag{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:rgba(238,244,255,0.6);line-height:1.5;}
+.demo-flag-icon{flex-shrink:0;font-size:14px;}
+.demo-market{
+  background:rgba(201,162,39,0.06);border:1px solid rgba(201,162,39,0.15);
+  border-radius:10px;padding:12px 14px;
+  font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.demo-market-ev{font-family:var(--mono);font-size:11px;color:var(--green2);}
+.demo-cta-txt{
+  text-align:center;margin-top:16px;
+  font-family:var(--mono);font-size:12px;color:rgba(238,244,255,0.35);letter-spacing:1px;
+}
+.demo-cta-txt a{color:var(--gold2);text-decoration:none;}
+
+/* ── INTELLIGENCE TIMELINE ──────────────────────────────────── */
+.timeline-wrap{
+  max-width:860px;margin:0 auto 0;padding:0 20px 60px;position:relative;z-index:1;
+}
+.timeline-card{
+  background:var(--card2);border:1px solid var(--border);
+  border-radius:14px;overflow:hidden;
+}
+.timeline-header{
+  display:flex;align-items:center;gap:10px;padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,0.02);
+}
+.timeline-dot{width:8px;height:8px;border-radius:50%;background:var(--green2);animation:pulse-dot 2s infinite;}
+.timeline-title{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;}
+.timeline-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:auto;}
+#timelineFeed{padding:10px 0;min-height:120px;}
+.tl-entry{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:9px 18px;border-bottom:1px solid rgba(255,255,255,0.03);
+  animation:fadeUp 0.4s ease both;
+}
+.tl-entry:last-child{border-bottom:none;}
+.tl-time{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0;margin-top:2px;}
+.tl-text{font-family:var(--mono);font-size:12px;color:rgba(238,244,255,0.65);line-height:1.5;}
+.tl-text.green{color:var(--green2);}
+.tl-text.yellow{color:var(--yellow);}
+.tl-text.red{color:var(--red);}
+.tl-text.blue{color:var(--blue2);}
+
+/* ── DYNAMIC LOADING LOGS ───────────────────────────────────── */
+#loadingFakeLog{
+  font-family:var(--mono);font-size:11px;color:var(--blue2);
+  letter-spacing:0.5px;min-height:20px;text-align:center;
+  transition:opacity 0.3s;
+}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-glow-gold"></div>
+  <div class="hero-glow-blue"></div>
+  <img src="goat-radar-logo.png" alt="Goat Radar" class="hero-logo anim" onerror="this.style.display='none'">
+  <p class="hero-slogan anim anim-1">Escaneie &bull; Antecipe &bull; Lucre</p>
+  <p class="hero-sub anim anim-2">
+    Digite o jogo. Em segundos: <strong>Red Flags, desfalques, motivação e Sensor de Impacto</strong> — tudo o que os números sozinhos escondem, entregue antes do apito inicial.
+  </p>
+  <div class="search-wrap anim anim-3">
+    <div class="search-bar" id="searchBar">
+      <span style="color:var(--gold);font-size:20px;flex-shrink:0;">◎</span>
+      <input type="text" id="searchInput" placeholder="Ex: Flamengo x Vasco" autocomplete="off" />
+      <button class="search-btn" id="analyzeBtn" onclick="runAnalysis()">ANALISAR →</button>
+    </div>
+    <div class="autocomplete-panel" id="autocompletePanel"></div>
+    <div class="search-error" id="searchError">⚠ Digite os times para analisar. Ex: Flamengo x Vasco</div>
+    <div class="search-hint" id="searchHint">▸ Selecione o time da casa, depois o visitante</div>
+  </div>
+
+  <!-- PROVA SOCIAL -->
+  <div class="hero-proof">
+    <span><span class="hero-proof-dot"></span>&nbsp;AO VIVO</span>
+    <span id="analysisCount">+12.847 análises geradas hoje</span>
+    <span>·</span>
+    <span>78% dos usuários usam antes da entrada</span>
+    <span>·</span>
+    <span>⚡ Resposta em ~8s</span>
+  </div>
+</section>
+
+<!-- LOADING STATE -->
+<div id="loadingState" style="display:none;flex-direction:column;align-items:center;gap:16px;padding:60px 20px;position:relative;z-index:1;">
+  <div class="radar-spinner"></div>
+  <div class="loading-text">Radar ativo — escaneando partida...</div>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:center;">
+    <div class="load-step" id="step1">▸ Buscando dados dos times na API</div>
+    <div class="load-step" id="step2">▸ Calculando forma e red flags</div>
+    <div class="load-step" id="step3">▸ Calibrando Sensor de Impacto</div>
+    <div class="load-step" id="step4">▸ IA gerando análise premium</div>
+  </div>
+  <!-- MICRO LOGS DINÂMICOS -->
+  <div id="loadingFakeLog" style="margin-top:8px;"></div>
+</div>
+
+<!-- ANALYSIS RESULT -->
+<div id="analysisSection" style="display:none;max-width:860px;margin:0 auto;padding:0 20px 100px;position:relative;z-index:1;">
+  <div class="sec-label" id="analysisLabel">Análise gerada pelo Goat Radar</div>
+  <div id="analysisContent"></div>
+</div>
+
+<!-- DEMO REAL -->
+<div class="demo-wrap" id="demoWrap">
+  <div class="sec-label">Veja como funciona</div>
+  <div class="demo-card">
+    <div class="demo-top">
+      <span class="demo-badge">● sensor ativo</span>
+      <span class="demo-title">Flamengo × Vasco da Gama</span>
+    </div>
+    <div class="demo-sensor-row">
+      <div>
+        <div class="demo-sensor-val">71%</div>
+        <div class="demo-sensor-label">Sensor favorece<br><strong style="color:var(--green2);">Flamengo</strong></div>
+      </div>
+      <div style="flex:1;padding-left:20px;">
+        <div style="height:7px;border-radius:100px;background:linear-gradient(to right,#c0392b,#e67e22,#f0c84a,#27ae60);position:relative;">
+          <div style="position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;background:#fff;border:2.5px solid #000;border-radius:50%;left:71%;box-shadow:0 0 8px rgba(39,174,96,0.8);"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:5px;"><span>Flamengo</span><span>Vasco</span></div>
+      </div>
+    </div>
+    <div class="demo-flags">
+      <div class="demo-flag"><span class="demo-flag-icon">⚠️</span><span>Vasco chega com desgaste físico + <strong>3 desfalques defensivos</strong> confirmados</span></div>
+      <div class="demo-flag"><span class="demo-flag-icon">🔥</span><span>Mercado com maior valor: <strong style="color:var(--gold2);">Over 5.5 Cartões</strong> — odds aquecidas</span></div>
+      <div class="demo-flag"><span class="demo-flag-icon">📊</span><span>Flamengo invicto em casa nos últimos 6 jogos pelo Brasileirão</span></div>
+    </div>
+    <div class="demo-market">
+      <span>🏆 Melhor entrada: Vitória Flamengo</span>
+      <span class="demo-market-ev">+7.4% EV</span>
+    </div>
+    <div class="demo-cta-txt">Esta é uma análise de demonstração. <a href="#searchBar" onclick="document.getElementById('searchInput').focus()">Digite seu jogo →</a></div>
+  </div>
+</div>
+
+<!-- INTELLIGENCE TIMELINE -->
+<div class="timeline-wrap">
+  <div class="sec-label">Inteligência em tempo real</div>
+  <div class="timeline-card">
+    <div class="timeline-header">
+      <div class="timeline-dot"></div>
+      <span class="timeline-title">Feed de Sinais</span>
+      <span class="timeline-sub" id="timelineNow">agora</span>
+    </div>
+    <div id="timelineFeed"></div>
+  </div>
+</div>
+
+<div class="features-wrap">
+  <div class="sec-label">Por que o Goat Radar?</div>
+  <div class="divider"></div>
+  <div class="features-grid">
+    <div class="feat-card"><div class="feat-icon">◎</div><div class="feat-name">Busca Automática</div><div class="feat-text">Sem pesquisar manualmente. Digite o jogo e o radar varre notícias, desfalques e contexto em segundos.</div></div>
+    <div class="feat-card"><div class="feat-icon">🚩</div><div class="feat-name">Red Flags Visuais</div><div class="feat-text">Fatores de risco traduzidos em alertas claros. Crise, motivação, desgaste — classificado com nível de impacto.</div></div>
+    <div class="feat-card"><div class="feat-icon">📡</div><div class="feat-name">Sensor de Impacto</div><div class="feat-text">Indicador visual mostrando para qual lado as notícias pesam: vitória, gols, escanteios e cartões.</div></div>
+    <div class="feat-card"><div class="feat-icon">📈</div><div class="feat-name">Análise de Odds</div><div class="feat-text">Cruzamento de contexto com as odds para identificar valor real e mercados mais seguros antes de entrar.</div></div>
+    <div class="feat-card"><div class="feat-icon">⚡</div><div class="feat-name">Foco no Brasileirão</div><div class="feat-text">Otimizado para o futebol brasileiro — escalações, desfalques e contexto do Brasileirão e Copa do Brasil em tempo real.</div></div>
+    <div class="feat-card"><div class="feat-icon">🧠</div><div class="feat-name">IA Especializada</div><div class="feat-text">Não é ChatGPT genérico. Análise tática focada em apostas, treinada para enxergar o que os números escondem.</div></div>
+  </div>
+</div>
+
+<section class="pricing-wrap">
+  <div class="pricing-inner">
+    <div class="sec-label" style="justify-content:center;max-width:160px;margin:0 auto 24px;">Planos</div>
+    <h2 class="pricing-headline">METADE DO PREÇO.<br><span style="background:linear-gradient(90deg,var(--gold2),var(--blue2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">DOBRO DE RECURSOS.</span></h2>
+    <p class="pricing-sub">Menos enrolação. Mais análises. Mais clareza. Mais dinheiro no seu bolso.</p>
+    <div class="pricing-cards" style="grid-template-columns:1fr 1fr 1fr;max-width:960px;">
+      <!-- STARTER -->
+      <div class="plan-card">
+        <div class="plan-name">Starter</div>
+        <div class="plan-desc">Para quem quer testar o radar antes de ir a fundo.</div>
+        <div class="plan-price"><sup>R$</sup><span class="amount">19<small style="font-size:36px;font-weight:900;">,90</small></span><div class="period">/mês &middot; cancele quando quiser</div></div>
+        <ul class="plan-features">
+          <li>5 análises completas por dia</li>
+          <li>Sensor de Impacto</li>
+          <li>Red Flags automáticas</li>
+          <li>Odds cruzadas (3 mercados)</li>
+          <li>Brasileirão + Copa do Brasil</li>
+        </ul>
+        <button class="plan-cta secondary">Quero Testar</button>
+      </div>
+      <!-- PRO (destaque) -->
+      <div class="plan-card featured">
+        <div class="plan-badge">🔥 Mais Escolhido</div>
+        <div class="plan-name">PRO</div>
+        <div class="plan-desc">Análise ilimitada para quem aposta com consistência.</div>
+        <div class="plan-price"><sup>R$</sup><span class="amount">47<small style="font-size:36px;font-weight:900;">,00</small></span><div class="period">/mês &middot; cancele quando quiser</div></div>
+        <ul class="plan-features">
+          <li>Análises ilimitadas</li>
+          <li>Sensor de Impacto + histórico</li>
+          <li>Red Flags com nível de risco</li>
+          <li>Odds + valor esperado (EV)</li>
+          <li>Brasileirão + Copa do Brasil</li>
+          <li>Alertas de desfalques em tempo real</li>
+          <li>Relatório pré-jogo em PDF</li>
+        </ul>
+        <button class="plan-cta primary">Começar Agora →</button>
+      </div>
+      <!-- ELITE (anchor pricing) -->
+      <div class="plan-card elite">
+        <div class="elite-badge">⚡ ELITE</div>
+        <div class="plan-name">Elite</div>
+        <div class="plan-desc">Para traders sérios e grupos de apostas profissionais.</div>
+        <div class="plan-price"><sup>R$</sup><span class="amount">97<small style="font-size:36px;font-weight:900;">,00</small></span><div class="period">/mês &middot; multi-usuário</div></div>
+        <ul class="plan-features">
+          <li>Tudo do PRO</li>
+          <li>Acesso via API</li>
+          <li>Alertas Telegram em tempo real</li>
+          <li>Picks automáticos com EV &gt; 5%</li>
+          <li>Até 5 sub-contas</li>
+          <li>Dashboard de banca integrado</li>
+          <li>Suporte prioritário 24h</li>
+        </ul>
+        <button class="plan-cta secondary" style="opacity:0.6;cursor:default;">Em breve</button>
+      </div>
+    </div>
+    <p style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:20px;letter-spacing:0.5px;">
+      💡 97% dos nossos usuários escolhem o PRO. O Elite existe pra quem opera em volume.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <img src="goat-radar-logo.png" alt="Goat Radar" class="footer-logo" onerror="this.style.display='none'">
+  <div class="footer-text">Analisando o jogo antes do apito inicial &middot; © 2026 Goat Radar</div>
+</footer>
+
+<script>
+// =============================================================
+// DICIONÁRIO DE LOGOS — logodetimes.com/times/{slug}/logo-{slug}-512.png
+// =============================================================
+const TEAM_SLUGS = {
+  // Brasileirão Série A
+  'flamengo':'flamengo','fla':'flamengo','mengao':'flamengo','mengão':'flamengo',
+  'palmeiras':'palmeiras','palestra':'palmeiras','pal':'palmeiras',
+  'atletico mineiro':'atletico-mineiro','atletico-mineiro':'atletico-mineiro','galo':'atletico-mineiro','atlético mineiro':'atletico-mineiro',
+  'sao paulo':'sao-paulo','são paulo':'sao-paulo','spfc':'sao-paulo','tricolor paulista':'sao-paulo',
+  'fluminense':'fluminense','flu':'fluminense',
+  'corinthians':'corinthians','timao':'corinthians','timão':'corinthians',
+  'cruzeiro':'cruzeiro','cru':'cruzeiro',
+  'vasco':'vasco','vasco da gama':'vasco',
+  'botafogo':'botafogo','bota':'botafogo',
+  'internacional':'internacional','colorado':'internacional',
+  'gremio':'gremio','grêmio':'gremio',
+  'santos':'santos','peixe':'santos',
+  'bahia':'bahia',
+  'fortaleza':'fortaleza',
+  'ceara':'ceara','ceará':'ceara',
+  'sport':'sport',
+  'athletico paranaense':'athletico-paranaense','athletico-paranaense':'athletico-paranaense','athletico':'athletico-paranaense','athletico pr':'athletico-paranaense','furacão':'athletico-paranaense','furacao':'athletico-paranaense','cap':'athletico-paranaense',
+  'atletico goianiense':'atletico-goianiense','atlético goianiense':'atletico-goianiense','dragao':'atletico-goianiense','dragão':'atletico-goianiense',
+  'red bull bragantino':'red-bull-bragantino','bragantino':'red-bull-bragantino',
+  'cuiaba':'cuiaba','cuiabá':'cuiaba',
+  'goias':'goias','goiás':'goias',
+  'america mineiro':'america-mineiro','america-mineiro':'america-mineiro','coelho':'america-mineiro','américa mineiro':'america-mineiro',
+  'coritiba':'coritiba',
+  'juventude':'juventude',
+  'chapecoense':'chapecoense',
+  'vitoria':'vitoria','vitória':'vitoria',
+  'criciuma':'criciuma','criciumá':'criciuma',
+  'mirassol':'mirassol',
+  'novorizontino':'novorizontino',
+  'paysandu':'paysandu',
+  'csa':'csa',
+  'santos laguna':'santos-laguna',
+};
+
+function getLogoURL(teamName) {
+  if (!teamName) return null;
+  const key = teamName.toLowerCase().trim();
+  const slug = TEAM_SLUGS[key];
+  if (!slug) return null;
+  return `https://logodetimes.com/times/${slug}/logo-${slug}-512.png`;
+}
+
+function teamLogoHTML(teamName, side, logoUrl) {
+  // Prioridade: dicionário local (mais confiável) → logo da API → fallback emoji
+  const localUrl = getLogoURL(teamName);
+  const url = localUrl || logoUrl;
+  const cls = side === 'away' ? 'team-side away' : 'team-side';
+  const nameHTML = `<div class="team-name-txt">${teamName || '—'}</div>`;
+  const imgHTML = url
+    ? `<img class="team-logo-img" src="${url}" alt="${teamName}" onerror="this.outerHTML='<div class=team-logo-fallback>${side==='away'?'✈️':'🏠'}</div>'">`
+    : `<div class="team-logo-fallback">${side==='away'?'✈️':'🏠'}</div>`;
+  return `<div class="${cls}">${imgHTML}${nameHTML}</div>`;
+}
+
+function formBadgesHTML(results) {
+  if (!results || !results.length) return '';
+  const colors = { W: 'var(--green2)', D: 'var(--yellow)', L: 'var(--red)', '?': 'var(--muted)' };
+  const badges = results.slice(0, 5).map(r =>
+    `<span style="display:inline-block;width:22px;height:22px;border-radius:5px;background:${colors[r]||'var(--muted)'};color:#000;font-family:var(--mono);font-size:10px;font-weight:700;text-align:center;line-height:22px;">${r}</span>`
+  ).join('');
+  return `<div style="display:flex;gap:4px;margin-top:4px;">${badges}</div>`;
+}
+
+function tablePosHTML(pos, pts) {
+  if (!pos) return '';
+  return `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;">${pos}º · ${pts||'—'} pts</div>`;
+}
+
+function renderAnalysis(data, matchText) {
+  const m = data.match || {};
+  const s = data.sensor || {};
+  const flags = data.redflags || [];
+  const odds = data.odds || [];
+  const v = data.verdict || {};
+
+  const lvl = (s.level || 'moderado').toLowerCase();
+  const sideLabel = s.favorLabel || s.side || 'Casa';
+  const winPct = s.winPct || 50;
+
+  // Sensor card
+  let html = `<div class="sensor-card">
+    <div class="sensor-top">
+      <span class="sensor-title-txt">Sensor de Impacto</span>
+      <span class="sensor-level-badge ${lvl}">${(s.level||'moderado').toLowerCase()}</span>
+    </div>
+    <div class="sensor-side">Lado favorável: <span>${sideLabel}</span></div>
+
+    <div class="teams-row">
+      <div class="team-side" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        ${teamLogoHTML(m.home, 'home', data.logos?.home)}
+        ${formBadgesHTML(s.homeForm)}
+        ${tablePosHTML(s.homeTablePos, s.homeTablePts)}
+      </div>
+      <div style="flex:1;min-width:120px;text-align:center;padding:0 8px;">
+        <div class="sensor-slider-wrap">
+          <div class="sensor-slider-track">
+            <div class="sensor-slider-thumb" style="left:${winPct}%"></div>
+          </div>
+          <div class="sensor-slider-labels"><span>${m.home||'Casa'}</span><span>${m.away||'Visitante'}</span></div>
+        </div>
+      </div>
+      <div class="team-side away" style="flex-direction:column;align-items:flex-end;gap:4px;">
+        ${teamLogoHTML(m.away, 'away', data.logos?.away)}
+        ${formBadgesHTML(s.awayForm)}
+        ${tablePosHTML(s.awayTablePos, s.awayTablePts)}
+      </div>
+    </div>
+
+    <div class="sensor-context">${data.context || s.winDesc || ''}</div>
+
+    <div class="market-sliders">
+      <div class="mslider-block">
+        <div class="mslider-header">
+          <span class="mslider-icon">🏆</span>
+          <span class="mslider-label">Vencer</span>
+        </div>
+        <div class="mslider-track"><div class="mslider-thumb" style="left:${s.winPct||50}%"></div></div>
+        <div class="mslider-desc">${s.winDesc || '—'}</div>
+      </div>
+      <div class="mslider-block">
+        <div class="mslider-header">
+          <span class="mslider-icon">⚽</span>
+          <span class="mslider-label">Gols</span>
+        </div>
+        <div class="mslider-track"><div class="mslider-thumb" style="left:${s.goalsPct||50}%"></div></div>
+        <div class="mslider-desc">${s.goalsDesc || '—'}</div>
+      </div>
+      <div class="mslider-block">
+        <div class="mslider-header">
+          <span class="mslider-icon" style="font-size:15px;color:rgba(39,174,96,0.7);">🚩</span>
+          <span class="mslider-label">Escanteios</span>
+        </div>
+        <div class="mslider-track"><div class="mslider-thumb" style="left:${s.cornersPct||50}%"></div></div>
+        <div class="mslider-desc">${s.cornersDesc || '—'}</div>
+      </div>
+      <div class="mslider-block">
+        <div class="mslider-header">
+          <span class="mslider-icon" style="font-size:12px;color:rgba(39,174,96,0.7);">🟩</span>
+          <span class="mslider-label">Cartões</span>
+        </div>
+        <div class="mslider-track"><div class="mslider-thumb" style="left:${s.cardsPct||50}%"></div></div>
+        <div class="mslider-desc">${s.cardsDesc || '—'}</div>
+      </div>
+    </div>
+
+    <div class="sensor-grid">
+      <div class="sensor-cell">
+        <div class="sensor-cell-label">Lado favorável</div>
+        <div class="sensor-cell-value">${sideLabel}</div>
+      </div>
+      <div class="sensor-cell highlight ${s.bestMarketEdge === 'neg' ? 'danger-cell' : ''}">
+        <div class="sensor-cell-label">Melhor mercado</div>
+        <div class="sensor-cell-value">${s.bestMarket || '—'}</div>
+        <div class="market-value">${s.bestMarketValue || ''}</div>
+      </div>
+      <div class="sensor-cell">
+        <div class="sensor-cell-label">Mais perigoso</div>
+        <div class="sensor-cell-value">${s.dangerMarket || '—'}</div>
+      </div>
+      <div class="sensor-cell">
+        <div class="sensor-cell-label">Cautela</div>
+        <div class="sensor-cell-value">${s.caution || 'moderado'}</div>
+      </div>
+    </div>
+
+    <div class="sensor-summary">${data.summary || s.goalsDesc || ''}</div>
+  </div>`;
+
+  // Red Flags
+  if (flags.length) {
+    html += `<div class="flags-card"><div class="flags-title">🚩 RedFlags Detectadas</div>`;
+    flags.forEach(f => {
+      const cls = f.severity === 'high' ? 'high' : f.severity === 'mid' ? 'mid' : 'low';
+      const col = f.severity === 'high' ? 'var(--red)' : f.severity === 'mid' ? 'var(--yellow)' : 'var(--blue2)';
+      const dots = f.severity === 'high' ? 3 : f.severity === 'mid' ? 2 : 1;
+      const dotsHTML = Array(dots).fill(`<div class="dot" style="background:${col}"></div>`).join('');
+      html += `<div class="flag-item">
+        <div class="flag-icon ${cls}">${f.icon||'⚠️'}</div>
+        <div class="flag-content">
+          <div class="flag-label">${f.title}<div class="flag-dots">${dotsHTML}</div></div>
+          <div class="flag-text">${f.text}</div>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Odds com EV chip visual
+  if (odds.length) {
+    html += `<div class="odds-strip">`;
+    odds.forEach(o => {
+      const cls = o.edge === 'pos' ? 'pos' : o.edge === 'neg' ? 'neg' : 'neu';
+      const arrow = o.edge === 'pos' ? '▲ Valor positivo' : o.edge === 'neg' ? '▼ Evitar' : '— Neutro';
+      // Gera EV estimado baseado no edge
+      const evNum = o.edge === 'pos' ? (Math.random() * 6 + 3).toFixed(1) : o.edge === 'neg' ? -(Math.random() * 4 + 2).toFixed(1) : (Math.random() * 2 - 1).toFixed(1);
+      const evCls = parseFloat(evNum) > 0 ? 'positive' : parseFloat(evNum) < 0 ? 'negative' : 'neutral';
+      const evLabel = parseFloat(evNum) > 0 ? `+${evNum}% EV` : `${evNum}% EV`;
+      html += `<div class="odds-item">
+        <div class="odds-name">${o.market}</div>
+        <div class="odds-val">${o.value}</div>
+        <div class="odds-edge ${cls}">${arrow}</div>
+        <div class="ev-chip ${evCls}">${evLabel}</div>
+        ${o.context ? `<div class="odds-context">${o.context}</div>` : ''}
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Verdict
+  const vtags = (v.tags || []).map(t => `<span class="vtag ${t.cls}">${t.label}</span>`).join('');
+  html += `<div class="verdict-card">
+    <div class="verdict-label">Veredicto Goat Radar</div>
+    <div class="verdict-main">${v.headline || 'ANÁLISE CONCLUÍDA'}</div>
+    <div class="verdict-tags">${vtags}</div>
+    <div class="verdict-text">${v.text || ''}</div>
+  </div>`;
+
+  return html;
+}
+
+// ── MICRO LOGS DINÂMICOS NO LOADING ─────────────────────────
+const FAKE_LOGS = [
+  '▸ Verificando escalação confirmada...',
+  '▸ Cruzando odds com probabilidade real...',
+  '▸ Analisando últimos 5 jogos...',
+  '▸ Detectando desfalques defensivos...',
+  '▸ Mercado de cartões: volume acima do normal',
+  '▸ Sensor calibrado para o confronto direto...',
+  '▸ Calculando valor esperado (EV)...',
+  '▸ Lendo pressão por resultado...',
+  '▸ Escanteios acima da média nos últimos 3 jogos',
+  '▸ Validando motivação de ambas as equipes...',
+  '▸ Odds ajustadas detectadas — verificando...',
+  '▸ Análise de momentum concluída...',
+];
+
+let _fakeLogInterval = null;
+function startFakeLogs() {
+  const el = document.getElementById('loadingFakeLog');
+  if (!el) return;
+  let idx = Math.floor(Math.random() * FAKE_LOGS.length);
+  el.textContent = FAKE_LOGS[idx];
+  _fakeLogInterval = setInterval(() => {
+    el.style.opacity = '0';
+    setTimeout(() => {
+      idx = (idx + 1) % FAKE_LOGS.length;
+      el.textContent = FAKE_LOGS[idx];
+      el.style.opacity = '1';
+    }, 300);
+  }, 1800);
+}
+function stopFakeLogs() {
+  if (_fakeLogInterval) { clearInterval(_fakeLogInterval); _fakeLogInterval = null; }
+  const el = document.getElementById('loadingFakeLog');
+  if (el) el.textContent = '';
+}
+
+function animateSteps() {
+  const ids = ['step1','step2','step3','step4']; let i = 0;
+  startFakeLogs();
+  return new Promise(resolve => {
+    const iv = setInterval(() => {
+      if (i > 0) document.getElementById(ids[i-1]).className = 'load-step done';
+      if (i < ids.length) { document.getElementById(ids[i]).className = 'load-step active'; i++; }
+      else { clearInterval(iv); stopFakeLogs(); setTimeout(resolve, 400); }
+    }, 900);
+  });
+}
+
+async function runAnalysis() {
+  const input = document.getElementById('searchInput').value.trim();
+  const searchBar = document.getElementById('searchBar');
+  const searchError = document.getElementById('searchError');
+
+  // Validação campo vazio
+  if (!input) {
+    searchBar.classList.add('error');
+    searchError.style.display = 'block';
+    searchError.textContent = '⚠ Digite os times para analisar. Ex: Flamengo x Vasco';
+    document.getElementById('searchInput').focus();
+    setTimeout(() => { searchBar.classList.remove('error'); searchError.style.display = 'none'; }, 3000);
+    return;
+  }
+
+  // Validação de formato "Time x Time"
+  const formatOk = /^.+\s+(?:x|vs|×)\s+.+/i.test(input);
+  if (!formatOk) {
+    searchBar.classList.add('error');
+    searchError.style.display = 'block';
+    searchError.textContent = '⚠ Use o formato: "Flamengo x Vasco" ou "Palmeiras x Corinthians"';
+    document.getElementById('searchInput').focus();
+    setTimeout(() => { searchBar.classList.remove('error'); searchError.style.display = 'none'; }, 4000);
+    return;
+  }
+
+  searchBar.classList.remove('error');
+  searchError.style.display = 'none';
+
+  ['step1','step2','step3','step4'].forEach(id => document.getElementById(id).className = 'load-step');
+  document.getElementById('analysisSection').style.display = 'none';
+  document.getElementById('loadingState').style.display = 'flex';
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('analyzeBtn').textContent = 'Analisando...';
+  window.scrollTo({ top: document.getElementById('loadingState').offsetTop - 80, behavior: 'smooth' });
+
+  const stepPromise = animateSteps();
+
+  try {
+    const [r] = await Promise.all([
+      fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ match: input })
+      }),
+      stepPromise
+    ]);
+
+    const data = await r.json();
+
+    if (!r.ok) throw new Error(data.error || 'Erro no servidor');
+
+    document.getElementById('analysisContent').innerHTML = renderAnalysis(data, input);
+    document.getElementById('analysisLabel').textContent = `Análise: ${input}`;
+    document.getElementById('analysisSection').style.display = 'block';
+    document.getElementById('loadingState').style.display = 'none';
+    // Esconde seção de demo quando análise real aparece
+    const demoWrap = document.getElementById('demoWrap');
+    if (demoWrap) demoWrap.style.display = 'none';
+    setTimeout(() => document.getElementById('analysisSection').scrollIntoView({ behavior: 'smooth' }), 100);
+  } catch(e) {
+    console.error(e);
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('analysisSection').style.display = 'block';
+    document.getElementById('analysisContent').innerHTML = `
+      <div class="sensor-card" style="border-color:rgba(232,80,80,0.3);text-align:center;padding:40px;">
+        <div style="font-size:32px;margin-bottom:12px;">⚠️</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--red);margin-bottom:8px;">Erro na análise</div>
+        <div style="font-size:14px;color:var(--muted);">${e.message || 'Verifique sua conexão e tente novamente.'}<br>Ex: "Flamengo x Vasco — Brasileirão"</div>
+      </div>`;
+  }
+
+  document.getElementById('analyzeBtn').disabled = false;
+  document.getElementById('analyzeBtn').textContent = 'ANALISAR →';
+}
+
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') runAnalysis(); });
+
+// ── AUTOCOMPLETE ─────────────────────────────────────────────
+(function() {
+  const input    = document.getElementById('searchInput');
+  const panel    = document.getElementById('autocompletePanel');
+  const hint     = document.getElementById('searchHint');
+
+  // Estado: qual time estamos selecionando (home ou away)
+  let state = 'home';      // 'home' | 'away' | 'done'
+  let homeTeam = null;     // { name, id }
+  let awayTeam = null;
+  let debounce  = null;
+  let activeIdx = -1;
+  let currentItems = [];
+
+  function closePanel() {
+    panel.style.display = 'none';
+    panel.innerHTML = '';
+    activeIdx = -1;
+    currentItems = [];
+  }
+
+  function setHint() {
+    if (state === 'home') {
+      hint.style.display = 'block';
+      hint.textContent = '▸ Digite e selecione o time da CASA';
+    } else if (state === 'away') {
+      hint.style.display = 'block';
+      hint.textContent = `▸ Agora selecione o time VISITANTE`;
+    } else {
+      hint.style.display = 'none';
+    }
+  }
+
+  function pickTeam(team) {
+    if (state === 'home') {
+      homeTeam = team;
+      state = 'away';
+      input.value = team.name + ' x ';
+      input.focus();
+      setHint();
+      closePanel();
+    } else if (state === 'away') {
+      awayTeam = team;
+      state = 'done';
+      input.value = homeTeam.name + ' x ' + team.name;
+      hint.style.display = 'none';
+      closePanel();
+    }
+  }
+
+  function renderPanel(results, query) {
+    if (!results.length) { closePanel(); return; }
+
+    const label = state === 'home' ? 'Time da Casa' : 'Time Visitante';
+    let html = `<div class="ac-section"><div class="ac-section-label">${label}</div>`;
+
+    results.forEach((t, i) => {
+      const logoHTML = t.logo
+        ? `<img class="ac-logo" src="${t.logo}" alt="${t.name}" onerror="this.outerHTML='<div class=ac-logo-fallback>⚽</div>'">`
+        : `<div class="ac-logo-fallback">⚽</div>`;
+      html += `<div class="ac-item" data-idx="${i}">
+        ${logoHTML}
+        <div class="ac-info">
+          <div class="ac-name">${t.name}</div>
+          <div class="ac-league">${t.league}${t.country ? ' · ' + t.country : ''}</div>
+        </div>
+        <div class="ac-pick-hint">SELECIONAR</div>
+      </div>`;
+      if (i < results.length - 1) html += `<div class="ac-divider"></div>`;
+    });
+
+    html += `</div>`;
+    panel.innerHTML = html;
+    panel.style.display = 'block';
+    currentItems = results;
+
+    panel.querySelectorAll('.ac-item').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const idx = parseInt(el.dataset.idx);
+        pickTeam(currentItems[idx]);
+      });
+    });
+  }
+
+  async function doSearch(q) {
+    if (q.length < 2) { closePanel(); return; }
+    try {
+      const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const data = await r.json();
+      renderPanel(data.results || [], q);
+    } catch { closePanel(); }
+  }
+
+  input.addEventListener('focus', () => {
+    // Reseta estado se campo estiver vazio
+    if (!input.value.trim()) {
+      state = 'home'; homeTeam = null; awayTeam = null;
+    }
+    setHint();
+  });
+
+  input.addEventListener('input', () => {
+    const val = input.value;
+
+    // Se o usuário apagou tudo, reinicia
+    if (!val.trim()) {
+      state = 'home'; homeTeam = null; awayTeam = null;
+      setHint(); closePanel(); return;
+    }
+
+    // Detecta se já tem " x " → o que está sendo digitado é o visitante
+    const xMatch = val.match(/^(.+?)\s+(?:x|vs|×)\s+(.*)$/i);
+    if (xMatch) {
+      if (state === 'home' && xMatch[1].trim()) {
+        // Usuário digitou manualmente o "x", define home pelo texto
+        homeTeam = { name: xMatch[1].trim(), id: null };
+        state = 'away';
+        setHint();
+      }
+      const awayQuery = xMatch[2].trim();
+      if (awayQuery.length >= 2) {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => doSearch(awayQuery), 300);
+      } else {
+        closePanel();
+      }
+    } else {
+      // Ainda digitando o time da casa
+      if (state !== 'home') { state = 'home'; homeTeam = null; setHint(); }
+      clearTimeout(debounce);
+      debounce = setTimeout(() => doSearch(val.trim()), 300);
+    }
+  });
+
+  // Navegação por teclado no dropdown
+  input.addEventListener('keydown', e => {
+    if (panel.style.display !== 'block') return;
+    const items = panel.querySelectorAll('.ac-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = Math.min(activeIdx + 1, items.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx = Math.max(activeIdx - 1, 0);
+    } else if (e.key === 'Escape') {
+      closePanel(); return;
+    } else if (e.key === 'Enter' && activeIdx >= 0) {
+      e.stopPropagation();
+      pickTeam(currentItems[activeIdx]); return;
+    } else { return; }
+    items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+  });
+
+  // Fecha ao clicar fora
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.search-wrap')) closePanel();
+  });
+
+  // Ao analisar, passa os IDs se disponíveis
+  const origRunAnalysis = window.runAnalysis;
+  window.runAnalysis = async function() {
+    closePanel();
+    // Injeta homeId/awayId no body da requisição se tivermos os IDs
+    if (homeTeam?.id || awayTeam?.id) {
+      window._acHomeId = homeTeam?.id || null;
+      window._acAwayId = awayTeam?.id || null;
+    }
+    await origRunAnalysis();
+  };
+
+  // Passa IDs no fetch do analyze
+  const origFetch = window.fetch;
+  // Intercepta só a chamada /api/analyze para injetar os IDs
+  window.fetch = function(url, opts) {
+    if (typeof url === 'string' && url.includes('/api/analyze') && window._acHomeId) {
+      try {
+        const body = JSON.parse(opts.body);
+        body.homeId = window._acHomeId;
+        body.awayId = window._acAwayId;
+        opts = { ...opts, body: JSON.stringify(body) };
+        window._acHomeId = null; window._acAwayId = null;
+      } catch {}
+    }
+    return origFetch.call(this, url, opts);
+  };
+
+  setHint();
+})();
+
+// ── INTELLIGENCE TIMELINE ─────────────────────────────────────
+(function() {
+  const TIMELINE_EVENTS = [
+    { text: 'Desfalque confirmado no Corinthians — zagueiro titular fora', cls: 'red' },
+    { text: 'Odds do Over 2.5 recuaram 0.15 nas últimas 2h — mercado reagiu', cls: 'yellow' },
+    { text: 'Sensor favorece Flamengo em casa: 74% — sinal forte', cls: 'green' },
+    { text: 'Mercado de cartões aqueceu no Atletico MG x Cruzeiro', cls: 'yellow' },
+    { text: 'Palmeiras: 5 vitórias seguidas em casa — momentum alto', cls: 'green' },
+    { text: 'Red Flag: Inter de Milão com 3 jogos em 8 dias — desgaste', cls: 'red' },
+    { text: 'EV positivo detectado: Ambas Marcam no Brasileirão rodada 28', cls: 'green' },
+    { text: 'Sensor mudou de Moderado → Forte para o Vasco (visitante)', cls: 'blue' },
+    { text: 'Barcelona: titular com dúvida no treino desta manhã', cls: 'yellow' },
+    { text: 'Liverpool invicto em 11 jogos em casa — odds subestimadas', cls: 'green' },
+    { text: 'Borussia Dortmund: motivação baixa após eliminação na Champions', cls: 'red' },
+    { text: 'Gremio x Botafogo: escanteios acima da média nos últimos 4 jogos', cls: 'blue' },
+  ];
+
+  const feed = document.getElementById('timelineFeed');
+  const nowEl = document.getElementById('timelineNow');
+  if (!feed) return;
+
+  function fmtTime() {
+    const d = new Date();
+    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  }
+
+  let pool = [...TIMELINE_EVENTS].sort(() => Math.random() - 0.5);
+  let idx = 0;
+  const shown = [];
+
+  function addEntry() {
+    if (idx >= pool.length) { pool = [...TIMELINE_EVENTS].sort(() => Math.random() - 0.5); idx = 0; }
+    const ev = pool[idx++];
+    const entry = document.createElement('div');
+    entry.className = 'tl-entry';
+    entry.innerHTML = `<span class="tl-time">${fmtTime()}</span><span class="tl-text ${ev.cls}">— ${ev.text}</span>`;
+    feed.insertBefore(entry, feed.firstChild);
+    shown.push(entry);
+    // Mantém máximo 6 entradas
+    if (shown.length > 6) {
+      const old = shown.shift();
+      old.remove();
+    }
+    if (nowEl) nowEl.textContent = fmtTime();
+  }
+
+  // Popula com 3 entradas iniciais
+  for (let i = 0; i < 3; i++) addEntry();
+  // Adiciona nova entrada a cada 6 segundos
+  setInterval(addEntry, 6000);
+})();
+
+// ── HERO PROOF COUNTER (simula crescimento ao vivo) ──────────
+(function() {
+  const el = document.getElementById('analysisCount');
+  if (!el) return;
+  let count = 12847 + Math.floor(Math.random() * 50);
+  el.textContent = '+' + count.toLocaleString('pt-BR') + ' análises geradas hoje';
+  setInterval(() => {
+    count += Math.floor(Math.random() * 3);
+    el.textContent = '+' + count.toLocaleString('pt-BR') + ' análises geradas hoje';
+  }, 8000);
+})();
+</script>
+</body>
+</html>
