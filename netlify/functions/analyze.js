@@ -153,7 +153,28 @@ async function findTeam(rawName) {
 
     // Filtra APENAS times brasileiros para evitar Arsenal, etc.
     const brTeams = teams.filter(t => t.strCountry === 'Brazil' || t.strCountry === 'Brasil');
-    const pool = brTeams.length > 0 ? brTeams : teams; // fallback para todos se vazio
+
+    // Se não achou times BR, faz validação rigorosa de nome antes de usar times internacionais
+    let pool;
+    if (brTeams.length > 0) {
+      pool = brTeams;
+    } else {
+      // Validação estrita: só aceita se o nome do time bate razoavelmente com a busca
+      pool = teams.filter(t => {
+        const tName = normalizeStr(t.strTeam);
+        const tAlt  = normalizeStr(t.strAlternate || '');
+        return (
+          tName === nKey ||
+          tAlt  === nKey ||
+          tName.startsWith(nKey) ||
+          nKey.startsWith(tName) ||
+          (nKey.length >= 4 && tName.includes(nKey)) ||
+          levenshtein(tName, nKey) <= 1
+        );
+      });
+      // Se mesmo assim vazio, retorna null em vez de pegar qualquer resultado
+      if (!pool.length) return null;
+    }
 
     // Prioridade 1: match exato
     let matched = pool.find(t => normalizeStr(t.strTeam) === nKey);
