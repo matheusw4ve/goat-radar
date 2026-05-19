@@ -1,3 +1,17 @@
+exports.handler = async function(event) {
+
+  return {
+    statusCode: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    },
+    body: JSON.stringify({
+      teste: 'CODIGO NOVO RODANDO'
+    })
+  };
+
+  // resto do código...
 // ============================================================
 // GOAT RADAR — search.js FIXED BR
 // ============================================================
