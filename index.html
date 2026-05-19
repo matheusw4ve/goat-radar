@@ -252,7 +252,7 @@ body::before{
 .mslider-thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;background:#fff;border:2.5px solid #000;border-radius:50%;box-shadow:0 0 10px rgba(39,174,96,0.7);}
 .mslider-desc{font-size:13px;color:rgba(238,244,255,0.5);line-height:1.55;font-weight:500;}
 
-
+.sensor-summary{
   font-size:14px;color:rgba(238,244,255,0.5);line-height:1.6;
   padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);
 }
@@ -712,9 +712,9 @@ function getLogoURL(teamName) {
 }
 
 function teamLogoHTML(teamName, side, logoUrl) {
-  // Prioridade: dicionário local (mais confiável) → logo da API → fallback emoji
+  // Prioridade: logo da API (strTeamBadge via autocomplete/analyze) → dicionário local → fallback emoji
   const localUrl = getLogoURL(teamName);
-  const url = localUrl || logoUrl;
+  const url = logoUrl || localUrl;
   const cls = side === 'away' ? 'team-side away' : 'team-side';
   const nameHTML = `<div class="team-name-txt">${teamName || '—'}</div>`;
   const imgHTML = url
@@ -1114,6 +1114,7 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
     // Reseta estado se campo estiver vazio
     if (!input.value.trim()) {
       state = 'home'; homeTeam = null; awayTeam = null;
+      window._acHomeId = null; window._acAwayId = null;
     }
     setHint();
   });
@@ -1121,9 +1122,10 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
   input.addEventListener('input', () => {
     const val = input.value;
 
-    // Se o usuário apagou tudo, reinicia
+    // Se o usuário apagou tudo, reinicia incluindo IDs globais
     if (!val.trim()) {
       state = 'home'; homeTeam = null; awayTeam = null;
+      window._acHomeId = null; window._acAwayId = null;
       setHint(); closePanel(); return;
     }
 
@@ -1132,7 +1134,10 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
     if (xMatch) {
       if (state === 'home' && xMatch[1].trim()) {
         // Usuário digitou manualmente o "x", define home pelo texto
+        // Reseta IDs antigos para não contaminar nova análise
         homeTeam = { name: xMatch[1].trim(), id: null };
+        window._acHomeId = null;
+        window._acAwayId = null;
         state = 'away';
         setHint();
       }
@@ -1179,11 +1184,9 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
   const origRunAnalysis = window.runAnalysis;
   window.runAnalysis = async function() {
     closePanel();
-    // Injeta homeId/awayId no body da requisição se tivermos os IDs
-    if (homeTeam?.id || awayTeam?.id) {
-      window._acHomeId = homeTeam?.id || null;
-      window._acAwayId = awayTeam?.id || null;
-    }
+    // Salva IDs do autocomplete atual (persiste para essa análise)
+    if (homeTeam?.id) window._acHomeId = homeTeam.id;
+    if (awayTeam?.id) window._acAwayId = awayTeam.id;
     await origRunAnalysis();
   };
 
@@ -1191,13 +1194,13 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
   const origFetch = window.fetch;
   // Intercepta só a chamada /api/analyze para injetar os IDs
   window.fetch = function(url, opts) {
-    if (typeof url === 'string' && url.includes('/api/analyze') && window._acHomeId) {
+    if (typeof url === 'string' && url.includes('/api/analyze')) {
       try {
         const body = JSON.parse(opts.body);
-        body.homeId = window._acHomeId;
-        body.awayId = window._acAwayId;
+        // Injeta IDs se disponíveis (não zera — permite reanálise)
+        if (window._acHomeId) body.homeId = window._acHomeId;
+        if (window._acAwayId) body.awayId = window._acAwayId;
         opts = { ...opts, body: JSON.stringify(body) };
-        window._acHomeId = null; window._acAwayId = null;
       } catch {}
     }
     return origFetch.call(this, url, opts);
