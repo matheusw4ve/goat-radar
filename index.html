@@ -570,7 +570,20 @@ footer{border-top:1px solid var(--border);padding:40px 20px;text-align:center;po
       <span>🏆 Melhor entrada: Vitória Flamengo</span>
       <span class="demo-market-ev">+7.4% EV</span>
     </div>
-    <div class="demo-cta-txt">Esta é uma análise de demonstração. <a href="#searchBar" onclick="document.getElementById('searchInput').focus()">Digite seu jogo →</a></div>
+
+    <!-- VEREDITO — mesmo layout do resultado real -->
+    <div class="verdict-card" style="margin-top:14px;margin-bottom:0;">
+      <div class="verdict-label">📋 Veredito do Radar</div>
+      <div class="verdict-main">FLAMENGO FAVORITO</div>
+      <div class="verdict-tags">
+        <span class="vtag safe">Sinal forte</span>
+        <span class="vtag safe">Confiança Alta</span>
+        <span class="vtag warn">Red Flag moderada</span>
+      </div>
+      <div class="verdict-text">Flamengo em casa com 71% de vantagem calculada — forma superior e pressão ofensiva consistente. Mercado de cartões aquecido pelo histórico de confrontos tensos entre os rivais. Vitória Flamengo é o mercado com maior valor; Over 3.5 Cartões é o secundário recomendado.</div>
+    </div>
+
+    <div class="demo-cta-txt" style="margin-top:14px;">Esta é uma análise de demonstração. <a href="#searchBar" onclick="document.getElementById('searchInput').focus()">Digite seu jogo →</a></div>
   </div>
 </div>
 
@@ -604,7 +617,7 @@ footer{border-top:1px solid var(--border);padding:40px 20px;text-align:center;po
   <div class="pricing-inner">
     <div class="sec-label" style="justify-content:center;max-width:160px;margin:0 auto 24px;">Planos</div>
     <h2 class="pricing-headline">METADE DO PREÇO.<br><span style="background:linear-gradient(90deg,var(--gold2),var(--blue2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">DOBRO DE RECURSOS.</span></h2>
-    <p class="pricing-sub">Menos enrolação. Mais análises. Mais clareza. Mais dinheiro no seu bolso.</p>
+    <p class="pricing-sub">Análise completa em segundos. Sem enrolação. Mais dinheiro no bolso.</p>
     <div class="pricing-cards" style="grid-template-columns:1fr 1fr 1fr;max-width:960px;">
       <!-- STARTER -->
       <div class="plan-card">
@@ -880,10 +893,10 @@ function renderAnalysis(data, matchText) {
     html += `</div>`;
   }
 
-  // Verdict
+  // Veredito
   const vtags = (v.tags || []).map(t => `<span class="vtag ${t.cls}">${t.label}</span>`).join('');
   html += `<div class="verdict-card">
-    <div class="verdict-label">Veredicto Goat Radar</div>
+    <div class="verdict-label">📋 Veredito do Radar</div>
     <div class="verdict-main">${v.headline || 'ANÁLISE CONCLUÍDA'}</div>
     <div class="verdict-tags">${vtags}</div>
     <div class="verdict-text">${v.text || ''}</div>
@@ -942,19 +955,9 @@ function animateSteps() {
 }
 
 async function runAnalysis() {
-  const inputEl = document.getElementById('searchInput');
-  const input = inputEl.value.trim();
+  const input = document.getElementById('searchInput').value.trim();
   const searchBar = document.getElementById('searchBar');
   const searchError = document.getElementById('searchError');
-
-  // Se o campo foi editado manualmente sem usar o autocomplete, zera os IDs
-  // para não reusar times de uma análise anterior
-  const acInput = (window._acHomeId ? (window._acHomeName||'') : '') + (window._acAwayId ? (window._acAwayName||'') : '');
-  const inputNorm = input.toLowerCase().replace(/\s+x\s+/i,' x ');
-  const homeInInput = window._acHomeName && input.toLowerCase().includes(window._acHomeName.toLowerCase());
-  const awayInInput = window._acAwayName && input.toLowerCase().includes(window._acAwayName.toLowerCase());
-  if (!homeInInput) { window._acHomeId = null; window._acHomeName = null; }
-  if (!awayInInput) { window._acAwayId = null; window._acAwayName = null; }
 
   // Validação campo vazio
   if (!input) {
@@ -1053,7 +1056,6 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
   window._resetAC = function resetSelection() {
     state = 'home'; homeTeam = null; awayTeam = null;
     window._acHomeId = null; window._acAwayId = null;
-    window._acHomeName = null; window._acAwayName = null;
     input.value = '';
     input.focus();
     closePanel();
@@ -1076,8 +1078,6 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
   function pickTeam(team) {
     if (state === 'home') {
       homeTeam = team;
-      window._acHomeId = team.id;
-      window._acHomeName = team.name;
       state = 'away';
       input.value = team.name + ' x ';
       input.focus();
@@ -1085,8 +1085,6 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
       closePanel();
     } else if (state === 'away') {
       awayTeam = team;
-      window._acAwayId = team.id;
-      window._acAwayName = team.name;
       state = 'done';
       input.value = homeTeam.name + ' x ' + team.name;
       hint.style.display = 'none';
@@ -1154,16 +1152,7 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
     if (!val.trim()) {
       state = 'home'; homeTeam = null; awayTeam = null;
       window._acHomeId = null; window._acAwayId = null;
-      window._acHomeName = null; window._acAwayName = null;
       setHint(); closePanel(); return;
-    }
-
-    // Se estava em 'done' e o usuário editou, volta pro fluxo e zera IDs
-    if (state === 'done') {
-      state = 'home'; homeTeam = null; awayTeam = null;
-      window._acHomeId = null; window._acAwayId = null;
-      window._acHomeName = null; window._acAwayName = null;
-      setHint();
     }
 
     // Detecta se já tem " x " → o que está sendo digitado é o visitante
@@ -1222,25 +1211,21 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
   window.runAnalysis = async function() {
     closePanel();
     // Salva IDs do autocomplete atual (persiste para essa análise)
-    if (homeTeam?.id) { window._acHomeId = homeTeam.id; window._acHomeName = homeTeam.name; }
-    if (awayTeam?.id) { window._acAwayId = awayTeam.id; window._acAwayName = awayTeam.name; }
+    if (homeTeam?.id) window._acHomeId = homeTeam.id;
+    if (awayTeam?.id) window._acAwayId = awayTeam.id;
     await origRunAnalysis();
   };
 
-  // Passa IDs no fetch do analyze — injeta diretamente no body
+  // Passa IDs no fetch do analyze
   const origFetch = window.fetch;
+  // Intercepta só a chamada /api/analyze para injetar os IDs
   window.fetch = function(url, opts) {
     if (typeof url === 'string' && url.includes('/api/analyze')) {
       try {
         const body = JSON.parse(opts.body);
-        const inputVal = document.getElementById('searchInput')?.value || '';
-        // Só injeta ID se o nome do time ainda está presente no campo
-        if (window._acHomeId && window._acHomeName && inputVal.toLowerCase().includes(window._acHomeName.toLowerCase())) {
-          body.homeId = window._acHomeId;
-        }
-        if (window._acAwayId && window._acAwayName && inputVal.toLowerCase().includes(window._acAwayName.toLowerCase())) {
-          body.awayId = window._acAwayId;
-        }
+        // Injeta IDs se disponíveis (não zera — permite reanálise)
+        if (window._acHomeId) body.homeId = window._acHomeId;
+        if (window._acAwayId) body.awayId = window._acAwayId;
         opts = { ...opts, body: JSON.stringify(body) };
       } catch {}
     }
@@ -1252,26 +1237,19 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
 
 // ── INTELLIGENCE TIMELINE ─────────────────────────────────────
 (function() {
-  // Gerador de sinais genéricos — sem nomes fixos de times
-  const SIGNAL_TEMPLATES = [
-    { text: 'Odds do Over 2.5 recuaram nas últimas 2h — mercado em movimento', cls: 'yellow' },
-    { text: 'Padrão de escanteios acima da média detectado nos jogos deste fim de semana', cls: 'blue' },
-    { text: 'Sensor de momentum atualizado — favorito confirmado para o próximo confronto', cls: 'green' },
-    { text: 'Mercado de cartões com volume acima do normal em 3 jogos da rodada', cls: 'yellow' },
-    { text: 'EV positivo detectado em mercado de escanteios — oportunidade identificada', cls: 'green' },
-    { text: 'Odds do Ambas Marcam subiram 0.10 nas últimas horas — atenção', cls: 'yellow' },
-    { text: 'Red Flag: time com 3 jogos em 8 dias — risco de desgaste físico', cls: 'red' },
-    { text: 'Sinal forte detectado: time mandante com 4+ vitórias consecutivas em casa', cls: 'green' },
-    { text: 'Pressão ofensiva elevada identificada no confronto do Brasileirão desta rodada', cls: 'blue' },
-    { text: 'Mercado de handicap asiático ajustado — bookmakers recalibrando favorito', cls: 'yellow' },
-    { text: 'Defesa fragilizada detectada — média de gols sofridos acima de 2.0/jogo', cls: 'red' },
-    { text: 'Sensor mudou de Moderado → Forte para o visitante nesta rodada', cls: 'blue' },
-    { text: 'Odds do resultado empate caíram 0.20 — mercado descartando X', cls: 'yellow' },
-    { text: 'Análise de motivação: equipe com objetivo classificatório urgente', cls: 'green' },
-    { text: 'Padrão identificado: confrontos equilibrados tendem a mais cartões', cls: 'blue' },
-    { text: 'Red Flag: histórico de lesões no setor defensivo desta semana', cls: 'red' },
-    { text: 'Valor esperado positivo em Under 2.5 para jogos de baixa ofensividade', cls: 'green' },
-    { text: 'Movimento de odds detectado no mercado asiático — sharp money ativo', cls: 'yellow' },
+  const TIMELINE_EVENTS = [
+    { text: 'Desfalque confirmado no Corinthians — zagueiro titular fora', cls: 'red' },
+    { text: 'Odds do Over 2.5 recuaram 0.15 nas últimas 2h — mercado reagiu', cls: 'yellow' },
+    { text: 'Sensor favorece Flamengo em casa: 74% — sinal forte', cls: 'green' },
+    { text: 'Mercado de cartões aqueceu no Atletico MG x Cruzeiro', cls: 'yellow' },
+    { text: 'Palmeiras: 5 vitórias seguidas em casa — momentum alto', cls: 'green' },
+    { text: 'Red Flag: Inter de Milão com 3 jogos em 8 dias — desgaste', cls: 'red' },
+    { text: 'EV positivo detectado: Ambas Marcam no Brasileirão rodada 28', cls: 'green' },
+    { text: 'Sensor mudou de Moderado → Forte para o Vasco (visitante)', cls: 'blue' },
+    { text: 'Barcelona: titular com dúvida no treino desta manhã', cls: 'yellow' },
+    { text: 'Liverpool invicto em 11 jogos em casa — odds subestimadas', cls: 'green' },
+    { text: 'Borussia Dortmund: motivação baixa após eliminação na Champions', cls: 'red' },
+    { text: 'Gremio x Botafogo: escanteios acima da média nos últimos 4 jogos', cls: 'blue' },
   ];
 
   const feed = document.getElementById('timelineFeed');
@@ -1283,12 +1261,12 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
     return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
   }
 
-  let pool = [...SIGNAL_TEMPLATES].sort(() => Math.random() - 0.5);
+  let pool = [...TIMELINE_EVENTS].sort(() => Math.random() - 0.5);
   let idx = 0;
   const shown = [];
 
   function addEntry() {
-    if (idx >= pool.length) { pool = [...SIGNAL_TEMPLATES].sort(() => Math.random() - 0.5); idx = 0; }
+    if (idx >= pool.length) { pool = [...TIMELINE_EVENTS].sort(() => Math.random() - 0.5); idx = 0; }
     const ev = pool[idx++];
     const entry = document.createElement('div');
     entry.className = 'tl-entry';
@@ -1305,8 +1283,8 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
 
   // Popula com 3 entradas iniciais
   for (let i = 0; i < 3; i++) addEntry();
-  // Adiciona nova entrada a cada 8 segundos
-  setInterval(addEntry, 8000);
+  // Adiciona nova entrada a cada 6 segundos
+  setInterval(addEntry, 6000);
 })();
 
 // ── HERO PROOF COUNTER (simula crescimento ao vivo) ──────────
