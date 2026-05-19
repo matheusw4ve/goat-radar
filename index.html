@@ -86,7 +86,8 @@ body::before{
 .autocomplete-panel{
   position:absolute;top:calc(100% + 6px);left:0;right:0;
   background:var(--card2);border:1.5px solid var(--border);
-  border-radius:12px;overflow:hidden;z-index:100;
+  border-radius:12px;overflow-y:auto;overflow-x:hidden;z-index:100;
+  max-height:320px;scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent;
   box-shadow:0 16px 48px rgba(0,0,0,0.5);
   display:none;
 }
@@ -109,7 +110,9 @@ body::before{
 .ac-pick-hint{font-family:var(--mono);font-size:9px;color:var(--gold-dim);letter-spacing:1px;flex-shrink:0;}
 .ac-divider{height:1px;background:var(--border);margin:0 14px;}
 /* instrução de uso */
-.search-hint{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:0.5px;display:none;}
+.search-hint{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:0.5px;display:none;align-items:center;gap:10px;justify-content:space-between;}
+.hint-reset{font-family:var(--mono);font-size:10px;color:var(--gold);background:none;border:1px solid rgba(201,162,39,0.3);border-radius:5px;padding:3px 10px;cursor:pointer;letter-spacing:1px;transition:all 0.2s;white-space:nowrap;}
+.hint-reset:hover{background:rgba(201,162,39,0.1);}
 
 .search-bar{
   display:flex;align-items:center;
@@ -1037,15 +1040,25 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
     currentItems = [];
   }
 
+  window._resetAC = function resetSelection() {
+    state = 'home'; homeTeam = null; awayTeam = null;
+    window._acHomeId = null; window._acAwayId = null;
+    input.value = '';
+    input.focus();
+    closePanel();
+    setHint();
+  }
+
   function setHint() {
     if (state === 'home') {
-      hint.style.display = 'block';
-      hint.textContent = '▸ Digite e selecione o time da CASA';
+      hint.style.display = 'flex';
+      hint.innerHTML = '<span>▸ Digite e selecione o time da CASA</span>';
     } else if (state === 'away') {
-      hint.style.display = 'block';
-      hint.textContent = `▸ Agora selecione o time VISITANTE`;
+      hint.style.display = 'flex';
+      hint.innerHTML = `<span>▸ Agora selecione o time VISITANTE</span><button class="hint-reset" onclick="window._resetAC && window._resetAC()">← Recomeçar</button>`;
     } else {
-      hint.style.display = 'none';
+      hint.style.display = 'flex';
+      hint.innerHTML = `<span>✓ Times selecionados</span><button class="hint-reset" onclick="window._resetAC && window._resetAC()">← Trocar times</button>`;
     }
   }
 
