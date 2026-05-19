@@ -938,6 +938,10 @@ function animateSteps() {
   });
 }
 
+// Times selecionados no autocomplete — usados pelo /api/analyze
+let selectedHomeTeam = null;
+let selectedAwayTeam = null;
+
 async function runAnalysis() {
   const input = document.getElementById('searchInput').value.trim();
   const searchBar = document.getElementById('searchBar');
@@ -981,7 +985,11 @@ async function runAnalysis() {
       fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ match: input })
+        body: JSON.stringify({
+          match: input,
+          homeId: selectedHomeTeam?.id,
+          awayId: selectedAwayTeam?.id
+        })
       }),
       stepPromise
     ]);
@@ -1052,6 +1060,9 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
   function pickTeam(team) {
     if (state === 'home') {
       homeTeam = team;
+      selectedHomeTeam = team;
+      selectedAwayTeam = null;
+
       state = 'away';
       input.value = team.name + ' x ';
       input.focus();
@@ -1059,6 +1070,8 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
       closePanel();
     } else if (state === 'away') {
       awayTeam = team;
+      selectedAwayTeam = team;
+
       state = 'done';
       input.value = homeTeam.name + ' x ' + team.name;
       hint.style.display = 'none';
