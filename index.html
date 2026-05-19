@@ -570,19 +570,6 @@ footer{border-top:1px solid var(--border);padding:40px 20px;text-align:center;po
       <span>🏆 Melhor entrada: Vitória Flamengo</span>
       <span class="demo-market-ev">+7.4% EV</span>
     </div>
-
-    <!-- VEREDITO — mesmo layout do resultado real -->
-    <div class="verdict-card" style="margin-top:14px;margin-bottom:0;">
-      <div class="verdict-label">📋 Veredito do Radar</div>
-      <div class="verdict-main">FLAMENGO FAVORITO</div>
-      <div class="verdict-tags">
-        <span class="vtag safe">Sinal forte</span>
-        <span class="vtag safe">Confiança Alta</span>
-        <span class="vtag warn">Red Flag moderada</span>
-      </div>
-      <div class="verdict-text">Flamengo em casa com 71% de vantagem calculada — forma superior e pressão ofensiva consistente. Mercado de cartões aquecido pelo histórico de confrontos tensos entre os rivais. Vitória Flamengo é o mercado com maior valor; Over 3.5 Cartões é o secundário recomendado.</div>
-    </div>
-
     <div class="demo-cta-txt" style="margin-top:14px;">Esta é uma análise de demonstração. <a href="#searchBar" onclick="document.getElementById('searchInput').focus()">Digite seu jogo →</a></div>
   </div>
 </div>
@@ -878,10 +865,14 @@ function renderAnalysis(data, matchText) {
     odds.forEach(o => {
       const cls = o.edge === 'pos' ? 'pos' : o.edge === 'neg' ? 'neg' : 'neu';
       const arrow = o.edge === 'pos' ? '▲ Valor positivo' : o.edge === 'neg' ? '▼ Evitar' : '— Neutro';
-      // Gera EV estimado baseado no edge
-      const evNum = o.edge === 'pos' ? (Math.random() * 6 + 3).toFixed(1) : o.edge === 'neg' ? -(Math.random() * 4 + 2).toFixed(1) : (Math.random() * 2 - 1).toFixed(1);
-      const evCls = parseFloat(evNum) > 0 ? 'positive' : parseFloat(evNum) < 0 ? 'negative' : 'neutral';
-      const evLabel = parseFloat(evNum) > 0 ? `+${evNum}% EV` : `${evNum}% EV`;
+      // EV determinístico baseado na odd e edge — sem Math.random()
+      const odd = parseFloat(o.value);
+      let evNum;
+      if (o.edge === 'pos') evNum = +((odd - 1) * 0.08 * 100 - 2).toFixed(1);
+      else if (o.edge === 'neg') evNum = +(-(odd - 1) * 0.06 * 100 + 1).toFixed(1);
+      else evNum = +((odd - 1) * 0.02 * 100 - 1).toFixed(1);
+      const evCls = evNum > 0 ? 'positive' : evNum < 0 ? 'negative' : 'neutral';
+      const evLabel = evNum > 0 ? `+${evNum}% EV` : `${evNum}% EV`;
       html += `<div class="odds-item">
         <div class="odds-name">${o.market}</div>
         <div class="odds-val">${o.value}</div>
@@ -892,6 +883,44 @@ function renderAnalysis(data, matchText) {
     });
     html += `</div>`;
   }
+
+  // Mini card estilo demo — resumo acima do Veredito
+  const bestOdd = odds.find(o => o.edge === 'pos') || odds[0] || {};
+  const bestOddVal = bestOdd.value || '—';
+  const bestOddEv = bestOdd.edge === 'pos'
+    ? `+${((parseFloat(bestOddVal) - 1) * 0.08 * 100 - 2).toFixed(1)}% EV`
+    : bestOdd.edge === 'neg' ? 'Evitar' : 'Neutro';
+  const favName = s.side === 'Casa' ? m.home : m.away;
+  const flagsResume = flags.slice(0, 3).map(f =>
+    `<div class="demo-flag"><span class="demo-flag-icon">${f.icon||'⚠️'}</span><span>${f.title} — ${f.text}</span></div>`
+  ).join('');
+
+  html += `<div class="demo-card" style="margin-bottom:12px;">
+    <div class="demo-top" style="justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="demo-badge">● sensor ativo</span>
+        <span class="demo-title">${m.home||'Casa'} × ${m.away||'Visitante'}</span>
+      </div>
+      <span style="font-family:var(--mono);font-size:9px;color:rgba(201,162,39,0.4);letter-spacing:2px;">GOAT RADAR · AO VIVO</span>
+    </div>
+    <div class="demo-sensor-row">
+      <div>
+        <div class="demo-sensor-val">${s.winPct||50}%</div>
+        <div class="demo-sensor-label">Sensor favorece<br><strong style="color:var(--green2);">${favName||'Casa'}</strong></div>
+      </div>
+      <div style="flex:1;padding-left:20px;">
+        <div style="height:7px;border-radius:100px;background:linear-gradient(to right,#c0392b,#e67e22,#f0c84a,#27ae60);position:relative;">
+          <div style="position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;background:#fff;border:2.5px solid #000;border-radius:50%;left:${s.winPct||50}%;box-shadow:0 0 8px rgba(39,174,96,0.8);"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:5px;"><span>${m.home||'Casa'}</span><span>${m.away||'Visitante'}</span></div>
+      </div>
+    </div>
+    ${flagsResume ? `<div class="demo-flags">${flagsResume}</div>` : ''}
+    <div class="demo-market">
+      <span>🏆 Melhor entrada: ${bestOdd.market || s.bestMarketValue || '—'}</span>
+      <span class="demo-market-ev">${bestOddEv}</span>
+    </div>
+  </div>`;
 
   // Veredito
   const vtags = (v.tags || []).map(t => `<span class="vtag ${t.cls}">${t.label}</span>`).join('');
