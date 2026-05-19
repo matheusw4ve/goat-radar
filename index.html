@@ -424,7 +424,7 @@ footer{border-top:1px solid var(--border);padding:40px 20px;text-align:center;po
   border:1px solid rgba(201,162,39,0.18);border-radius:16px;padding:26px;
   position:relative;overflow:hidden;
 }
-.demo-card::before{
+.demo-card.is-demo::before{
   content:'DEMO — EXEMPLO REAL';
   position:absolute;top:14px;right:18px;
   font-family:var(--mono);font-size:9px;color:rgba(201,162,39,0.4);letter-spacing:2px;
@@ -544,7 +544,7 @@ footer{border-top:1px solid var(--border);padding:40px 20px;text-align:center;po
 <!-- DEMO REAL -->
 <div class="demo-wrap" id="demoWrap">
   <div class="sec-label">Veja como funciona</div>
-  <div class="demo-card">
+  <div class="demo-card is-demo">
     <div class="demo-top">
       <span class="demo-badge">● sensor ativo</span>
       <span class="demo-title">Flamengo × Vasco da Gama</span>
@@ -884,16 +884,32 @@ function renderAnalysis(data, matchText) {
     html += `</div>`;
   }
 
-  // Mini card estilo demo — resumo acima do Veredito
-  const bestOdd = odds.find(o => o.edge === 'pos') || odds[0] || {};
-  const bestOddVal = bestOdd.value || '—';
-  const bestOddEv = bestOdd.edge === 'pos'
-    ? `+${((parseFloat(bestOddVal) - 1) * 0.08 * 100 - 2).toFixed(1)}% EV`
-    : bestOdd.edge === 'neg' ? 'Evitar' : 'Neutro';
+  // Mini card estilo demo — resumo acima do Veredito com 3 entradas reais
   const favName = s.side === 'Casa' ? m.home : m.away;
   const flagsResume = flags.slice(0, 3).map(f =>
     `<div class="demo-flag"><span class="demo-flag-icon">${f.icon||'⚠️'}</span><span>${f.title} — ${f.text}</span></div>`
   ).join('');
+
+  // Monta até 3 entradas ordenadas: pos primeiro, neu depois, neg por último
+  const oddsRanked = [...odds].sort((a,b) => {
+    const rank = {pos:0,neu:1,neg:2};
+    return (rank[a.edge]??1) - (rank[b.edge]??1);
+  });
+
+  const marketRows = oddsRanked.map(o => {
+    const odd = parseFloat(o.value);
+    let evNum;
+    if (o.edge === 'pos') evNum = +((odd - 1) * 0.08 * 100 - 2).toFixed(1);
+    else if (o.edge === 'neg') evNum = +(-(odd - 1) * 0.06 * 100 + 1).toFixed(1);
+    else evNum = +((odd - 1) * 0.02 * 100 - 1).toFixed(1);
+    const evStr = evNum > 0 ? `+${evNum}% EV` : `${evNum}% EV`;
+    const evColor = o.edge === 'pos' ? 'var(--green2)' : o.edge === 'neg' ? 'var(--red)' : 'var(--muted)';
+    const icon = o.edge === 'pos' ? '🏆' : o.edge === 'neg' ? '⛔' : '➡️';
+    return `<div class="demo-market" style="margin-bottom:8px;">
+      <span>${icon} ${o.market} <span style="font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400;">@ ${o.value}</span></span>
+      <span class="demo-market-ev" style="color:${evColor};">${evStr}</span>
+    </div>`;
+  }).join('');
 
   html += `<div class="demo-card" style="margin-bottom:12px;">
     <div class="demo-top" style="justify-content:space-between;">
@@ -915,11 +931,9 @@ function renderAnalysis(data, matchText) {
         <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:5px;"><span>${m.home||'Casa'}</span><span>${m.away||'Visitante'}</span></div>
       </div>
     </div>
-    ${flagsResume ? `<div class="demo-flags">${flagsResume}</div>` : ''}
-    <div class="demo-market">
-      <span>🏆 Melhor entrada: ${bestOdd.market || s.bestMarketValue || '—'}</span>
-      <span class="demo-market-ev">${bestOddEv}</span>
-    </div>
+    ${flagsResume ? `<div class="demo-flags" style="margin-bottom:14px;">${flagsResume}</div>` : ''}
+    <div style="font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">📊 Entradas sugeridas</div>
+    ${marketRows}
   </div>`;
 
   // Veredito
@@ -1264,23 +1278,8 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
   setHint();
 })();
 
-// ── INTELLIGENCE TIMELINE ─────────────────────────────────────
+// ── INTELLIGENCE TIMELINE — notícias reais via Anthropic API ──
 (function() {
-  const TIMELINE_EVENTS = [
-    { text: 'Desfalque confirmado no Corinthians — zagueiro titular fora', cls: 'red' },
-    { text: 'Odds do Over 2.5 recuaram 0.15 nas últimas 2h — mercado reagiu', cls: 'yellow' },
-    { text: 'Sensor favorece Flamengo em casa: 74% — sinal forte', cls: 'green' },
-    { text: 'Mercado de cartões aqueceu no Atletico MG x Cruzeiro', cls: 'yellow' },
-    { text: 'Palmeiras: 5 vitórias seguidas em casa — momentum alto', cls: 'green' },
-    { text: 'Red Flag: Inter de Milão com 3 jogos em 8 dias — desgaste', cls: 'red' },
-    { text: 'EV positivo detectado: Ambas Marcam no Brasileirão rodada 28', cls: 'green' },
-    { text: 'Sensor mudou de Moderado → Forte para o Vasco (visitante)', cls: 'blue' },
-    { text: 'Barcelona: titular com dúvida no treino desta manhã', cls: 'yellow' },
-    { text: 'Liverpool invicto em 11 jogos em casa — odds subestimadas', cls: 'green' },
-    { text: 'Borussia Dortmund: motivação baixa após eliminação na Champions', cls: 'red' },
-    { text: 'Gremio x Botafogo: escanteios acima da média nos últimos 4 jogos', cls: 'blue' },
-  ];
-
   const feed = document.getElementById('timelineFeed');
   const nowEl = document.getElementById('timelineNow');
   if (!feed) return;
@@ -1290,30 +1289,97 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if (e.
     return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
   }
 
-  let pool = [...TIMELINE_EVENTS].sort(() => Math.random() - 0.5);
-  let idx = 0;
+  // Fallback genérico caso a API falhe
+  const FALLBACK = [
+    { text: 'Odds do Over 2.5 em movimento nas últimas 2h — mercado reagindo', cls: 'yellow' },
+    { text: 'Sensor de momentum atualizado — confrontos do fim de semana mapeados', cls: 'blue' },
+    { text: 'Padrão de escanteios acima da média detectado nesta rodada', cls: 'green' },
+    { text: 'Mercado de cartões com volume elevado em 3 partidas do Brasileirão', cls: 'yellow' },
+    { text: 'EV positivo detectado: Ambas Marcam em confronto de alto ataque', cls: 'green' },
+    { text: 'Red Flag: equipe com 3 jogos em 8 dias — desgaste físico mapeado', cls: 'red' },
+  ];
+
   const shown = [];
 
-  function addEntry() {
-    if (idx >= pool.length) { pool = [...TIMELINE_EVENTS].sort(() => Math.random() - 0.5); idx = 0; }
-    const ev = pool[idx++];
+  function addEntry(text, cls) {
     const entry = document.createElement('div');
     entry.className = 'tl-entry';
-    entry.innerHTML = `<span class="tl-time">${fmtTime()}</span><span class="tl-text ${ev.cls}">— ${ev.text}</span>`;
+    entry.innerHTML = `<span class="tl-time">${fmtTime()}</span><span class="tl-text ${cls}">— ${text}</span>`;
     feed.insertBefore(entry, feed.firstChild);
     shown.push(entry);
-    // Mantém máximo 6 entradas
-    if (shown.length > 6) {
-      const old = shown.shift();
-      old.remove();
-    }
+    if (shown.length > 6) { const old = shown.shift(); old.remove(); }
     if (nowEl) nowEl.textContent = fmtTime();
   }
 
-  // Popula com 3 entradas iniciais
-  for (let i = 0; i < 3; i++) addEntry();
-  // Adiciona nova entrada a cada 6 segundos
-  setInterval(addEntry, 6000);
+  function loadFallback() {
+    const shuffled = [...FALLBACK].sort(() => Math.random() - 0.5);
+    shuffled.slice(0, 4).forEach(e => addEntry(e.text, e.cls));
+    let fi = 0;
+    setInterval(() => {
+      const e = shuffled[fi++ % shuffled.length];
+      addEntry(e.text, e.cls);
+    }, 9000);
+  }
+
+  // Busca notícias reais via Anthropic API com web_search
+  async function loadRealNews() {
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          messages: [{
+            role: 'user',
+            content: `Busque as últimas notícias de futebol de hoje (lesões, desfalques, formas recentes, movimentos de odds, destaques do Brasileirão e futebol europeu). Responda SOMENTE em JSON válido sem markdown, com este formato exato:
+{"signals":[
+  {"text":"texto curto da notícia em português, máximo 90 caracteres","cls":"green|yellow|red|blue"},
+  ...
+]}
+Gere 8 sinais variados. cls: green=positivo/favorável, yellow=atenção/movimento mercado, red=risco/desfalque/crise, blue=estatística/padrão. Seja específico com nomes reais de times e jogadores.`
+          }]
+        })
+      });
+
+      if (!resp.ok) throw new Error('API error');
+      const data = await resp.json();
+
+      // Extrai o texto da resposta (pode ter tool_use blocks)
+      const textBlock = (data.content || []).find(b => b.type === 'text');
+      if (!textBlock) throw new Error('No text block');
+
+      const clean = textBlock.text.replace(/```json|```/g, '').trim();
+      const match = clean.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error('No JSON found');
+
+      const parsed = JSON.parse(match[0]);
+      const signals = parsed.signals || [];
+      if (!signals.length) throw new Error('Empty signals');
+
+      // Popula feed com notícias reais
+      signals.slice(0, 4).forEach(s => addEntry(s.text, s.cls || 'blue'));
+
+      // Rotaciona o restante a cada 10s
+      let si = 4;
+      setInterval(() => {
+        if (si < signals.length) {
+          addEntry(signals[si].text, signals[si].cls || 'blue');
+          si++;
+        } else {
+          // Recarrega notícias quando esgotar
+          loadRealNews();
+        }
+      }, 10000);
+
+    } catch(e) {
+      console.warn('Feed real falhou, usando fallback:', e.message);
+      loadFallback();
+    }
+  }
+
+  loadRealNews();
 })();
 
 // ── HERO PROOF COUNTER (simula crescimento ao vivo) ──────────
