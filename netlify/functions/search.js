@@ -222,6 +222,9 @@ function scoreTeam(team, query) {
   // 3. BOOST BRASIL — público principal é BR
   if (country === 'Brazil' || country === 'Brasil') score += 200;
 
+  // Extra boost BR para queries curtas (≤3 chars) — evita Arsenal p/ "va", "fl", etc.
+  if ((country === 'Brazil' || country === 'Brasil') && q.length <= 3) score += 300;
+
   // 4. BOOST DE POPULARIDADE
   const popKey = normalize(team.name);
   if (POPULARITY_BOOST[popKey]) score += POPULARITY_BOOST[popKey];
@@ -240,6 +243,10 @@ function scoreTeam(team, query) {
   for (const junk of JUNK_KEYWORDS) {
     if (nameLower.includes(junk)) { score -= 800; break; }
   }
+
+  // 6. PENALIZA TIMES INTERNACIONAIS EM QUERIES CURTAS (≤3 chars)
+  // Evita que "Arsenal" apareça para "va", "fl", "cr", etc.
+  if (q.length <= 3 && country !== 'Brazil' && country !== 'Brasil') score -= 400;
 
   return score;
 }
