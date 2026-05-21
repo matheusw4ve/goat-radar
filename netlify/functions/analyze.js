@@ -206,8 +206,8 @@ function calcForm(fixtures, teamId) {
 
   for (const f of last5) {
     const isHome = String(f.teams.home.id) === String(teamId);
-    const hg = f.goals?.home ?? f.score?.fulltime?.home ?? -1;
-    const ag = f.goals?.away ?? f.score?.fulltime?.away ?? -1;
+    const hg = f.goals.home ?? -1;
+    const ag = f.goals.away ?? -1;
     if (hg < 0 || ag < 0) { results.push('?'); continue; }
     if (isHome) {
       if (hg > ag) { pts += 3; results.push('W'); }
@@ -241,8 +241,8 @@ function calcMomentum(fixtures, teamId) {
   fixtures.slice(0, 3).forEach((f, i) => {
     const w = weights[i];
     const isHome = String(f.teams.home.id) === String(teamId);
-    const hg = f.goals?.home ?? f.score?.fulltime?.home ?? -1;
-    const ag = f.goals?.away ?? f.score?.fulltime?.away ?? -1;
+    const hg = f.goals.home ?? -1;
+    const ag = f.goals.away ?? -1;
     if (hg < 0 || ag < 0) return;
     max += w * 3;
     if (isHome) { total += hg > ag ? w * 3 : hg === ag ? w : 0; }
@@ -255,15 +255,14 @@ function calcGoalsAvg(fixtures, teamId) {
   let scored = 0, conceded = 0, count = 0;
   for (const f of fixtures.slice(0, 5)) {
     const isHome = String(f.teams.home.id) === String(teamId);
-    // API-Football pode usar goals.home/away ou score.fulltime.home/away
-    const hg = f.goals?.home ?? f.score?.fulltime?.home ?? -1;
-    const ag = f.goals?.away ?? f.score?.fulltime?.away ?? -1;
+    const hg = f.goals.home ?? -1;
+    const ag = f.goals.away ?? -1;
     if (hg < 0 || ag < 0) continue;
     count++;
     scored   += isHome ? hg : ag;
     conceded += isHome ? ag : hg;
   }
-  if (!count) return { scored: '1.2', conceded: '1.1' }; // fallback realista em vez de 0.0
+  if (!count) return { scored: '0.0', conceded: '0.0' };
   return { scored: (scored / count).toFixed(1), conceded: (conceded / count).toFixed(1) };
 }
 
@@ -295,22 +294,22 @@ function calcCornerAndCardEstimate(homeStats, awayStats) {
 function detectRedFlags(homeStats, awayStats) {
   const flags = [];
   if (/^L[3-5]/.test(homeStats.form.streak))
-    flags.push({ icon: '🔴', severity: 'high', title: `${homeStats.name} em crise`, text: `${homeStats.form.streak[1]} derrotas consecutivas.` });
+    flags.push({ icon: '🔴', severity: 'high', type: 'form', title: `${homeStats.name} em crise`, text: `${homeStats.form.streak[1]} derrotas consecutivas.` });
   if (/^L[3-5]/.test(awayStats.form.streak))
-    flags.push({ icon: '🔴', severity: 'high', title: `${awayStats.name} em crise`, text: `${awayStats.form.streak[1]} derrotas seguidas. Moral em baixa.` });
+    flags.push({ icon: '🔴', severity: 'high', type: 'form', title: `${awayStats.name} em crise`, text: `${awayStats.form.streak[1]} derrotas seguidas. Moral em baixa.` });
   if (!homeStats.form.results.filter(r => r !== '?').some(r => r === 'W') && homeStats.form.results.filter(r => r !== '?').length >= 3)
-    flags.push({ icon: '⚠️', severity: 'mid', title: `${homeStats.name} sem vencer`, text: `Nenhuma vitória nos últimos jogos registrados.` });
+    flags.push({ icon: '⚠️', severity: 'mid', type: 'form', title: `${homeStats.name} sem vencer`, text: `Nenhuma vitória nos últimos jogos registrados.` });
   if (!awayStats.form.results.filter(r => r !== '?').some(r => r === 'W') && awayStats.form.results.filter(r => r !== '?').length >= 3)
-    flags.push({ icon: '⚠️', severity: 'mid', title: `${awayStats.name} sem vencer`, text: `Nenhuma vitória recente fora de casa.` });
+    flags.push({ icon: '⚠️', severity: 'mid', type: 'form', title: `${awayStats.name} sem vencer`, text: `Nenhuma vitória recente fora de casa.` });
   if (parseFloat(homeStats.goals.conceded) > 2.0)
-    flags.push({ icon: '🛡️', severity: 'mid', title: `Defesa frágil — ${homeStats.name}`, text: `Média de ${homeStats.goals.conceded} gols sofridos por jogo.` });
+    flags.push({ icon: '🛡️', severity: 'mid', type: 'injury', title: `Defesa frágil — ${homeStats.name}`, text: `Média de ${homeStats.goals.conceded} gols sofridos por jogo.` });
   if (parseFloat(awayStats.goals.conceded) > 2.0)
-    flags.push({ icon: '🛡️', severity: 'mid', title: `Defesa frágil — ${awayStats.name}`, text: `Média de ${awayStats.goals.conceded} gols sofridos fora de casa.` });
+    flags.push({ icon: '🛡️', severity: 'mid', type: 'injury', title: `Defesa frágil — ${awayStats.name}`, text: `Média de ${awayStats.goals.conceded} gols sofridos fora de casa.` });
   if (homeStats.tablePos && awayStats.tablePos) {
     const diff = Math.abs(homeStats.tablePos - awayStats.tablePos);
     if (diff >= 10) {
       const stronger = homeStats.tablePos < awayStats.tablePos ? homeStats.name : awayStats.name;
-      flags.push({ icon: '📊', severity: 'low', title: 'Desigualdade na tabela', text: `${stronger} está ${diff} posições acima.` });
+      flags.push({ icon: '📊', severity: 'low', type: 'table', title: 'Desigualdade na tabela', text: `${stronger} está ${diff} posições acima.` });
     }
   }
   return flags.slice(0, 4);
@@ -320,8 +319,7 @@ function calcSensorScore(homeStats, awayStats) {
   const homeFormPct = (homeStats.form.score / 10) * 100;
   const awayFormPct = (awayStats.form.score / 10) * 100;
   let homeTableScore = 50, awayTableScore = 50;
-  const hasTable = homeStats.tablePos && awayStats.tablePos;
-  if (hasTable) {
+  if (homeStats.tablePos && awayStats.tablePos) {
     const total = homeStats.tablePos + awayStats.tablePos;
     homeTableScore = Math.round((awayStats.tablePos / total) * 100);
     awayTableScore = Math.round((homeStats.tablePos / total) * 100);
@@ -335,24 +333,14 @@ function calcSensorScore(homeStats, awayStats) {
   const diff = Math.abs(homeTotal - awayTotal);
   const level = diff > 20 ? 'forte' : diff > 8 ? 'moderado' : 'fraco';
   const side = homeTotal >= awayTotal ? 'Casa' : 'Visitante';
-
-  // Sinais de convergência — conta apenas sinais com diferença real
   const homeSignals = [
-    homeStats.form.score > awayStats.form.score + 1,        // forma claramente superior
-    homeStats.momentum > awayStats.momentum + 10,           // momentum com folga
-    hasTable && homeStats.tablePos < awayStats.tablePos,    // melhor posição na tabela
-    parseFloat(homeStats.goals.scored) > parseFloat(awayStats.goals.scored) + 0.3, // mais gols
-    homeStats.momentum > 60,                                // momentum absoluto forte
+    homeStats.form.score > awayStats.form.score,
+    homeStats.momentum > awayStats.momentum,
+    (homeStats.tablePos || 99) < (awayStats.tablePos || 99),
+    parseFloat(homeStats.goals.scored) > parseFloat(awayStats.goals.scored),
   ];
   const convergence = homeSignals.filter(Boolean).length;
-  // Com dados limitados (sem tabela), escala a confiança pelo diff
-  let confidence;
-  if (!hasTable) {
-    confidence = diff > 20 ? 'Alta' : diff > 10 ? 'Média' : 'Baixa';
-  } else {
-    confidence = convergence >= 3 ? 'Alta' : convergence >= 2 ? 'Média' : 'Baixa';
-  }
-
+  const confidence = convergence >= 3 ? 'Alta' : convergence === 2 ? 'Média' : 'Baixa';
   const avgGoals = (
     parseFloat(homeStats.goals.scored) + parseFloat(awayStats.goals.conceded) +
     parseFloat(awayStats.goals.scored) + parseFloat(homeStats.goals.conceded)
