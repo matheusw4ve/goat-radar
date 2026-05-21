@@ -403,9 +403,31 @@ function buildTags(sensor, redflags) {
   return tags;
 }
 
-// ── GROQ ──────────────────────────────────────────────────────
+// ── GROQ com Web Search (compound-beta) ───────────────────────
 async function generateWithGroq(prompt) {
   if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY não configurada');
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
+    body: JSON.stringify({
+      model: 'compound-beta',          // ← modelo com web search nativo
+      temperature: 0.55,
+      max_tokens: 1400,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    // fallback para llama se compound-beta não estiver disponível
+    if (r.status === 404 || r.status === 400) return generateWithGroqFallback(prompt);
+    throw new Error(`Groq error: ${err.error?.message || r.status}`);
+  }
+  const data = await r.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+// Fallback sem web search (modelo original)
+async function generateWithGroqFallback(prompt) {
   const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
@@ -418,7 +440,7 @@ async function generateWithGroq(prompt) {
   });
   if (!r.ok) {
     const err = await r.json().catch(() => ({}));
-    throw new Error(`Groq error: ${err.error?.message || r.status}`);
+    throw new Error(`Groq fallback error: ${err.error?.message || r.status}`);
   }
   const data = await r.json();
   return data.choices?.[0]?.message?.content || '';
@@ -427,31 +449,43 @@ async function generateWithGroq(prompt) {
 function buildGroqPrompt(homeStats, awayStats, sensor, redflags, matchRaw) {
   const flagsList = redflags.map(f => `- ${f.title}: ${f.text}`).join('\n') || 'Nenhuma red flag crítica.';
   return `Você é o Goat Radar, sistema premium de análise de apostas esportivas. Tom: técnico, direto, confiante.
-IMPORTANTE: Os times são EXATAMENTE "${homeStats.name}" (casa) e "${awayStats.name}" (visitante). Use esses nomes.
+
+TAREFA PRINCIPAL: Busque na web notícias das últimas 72 horas sobre "${homeStats.name}" e "${awayStats.name}". Procure especificamente: desfalques, lesões, suspensões, escalações, crise no clube, motivação, cansaço por calendário, declarações do técnico.
 
 PARTIDA: ${matchRaw}
 
-${homeStats.name} (Casa):
-- Forma: ${homeStats.form.results.join('-')} | Score: ${homeStats.form.score}/10 | Momentum: ${homeStats.momentum}%
-- Gols/jogo: marcados ${homeStats.goals.scored} | sofridos ${homeStats.goals.conceded}
-- Tabela: ${homeStats.tablePos ? `${homeStats.tablePos}º lugar, ${homeStats.tablePts} pts` : 'não disponível'}
+DADOS ESTATÍSTICOS JÁ CALCULADOS:
+${homeStats.name} (Casa): Forma ${homeStats.form.results.join('-')} | Score ${homeStats.form.score}/10 | Momentum ${homeStats.momentum}% | Gols marcados/jogo: ${homeStats.goals.scored} | sofridos: ${homeStats.goals.conceded} | Tabela: ${homeStats.tablePos ? `${homeStats.tablePos}º, ${homeStats.tablePts}pts` : 'n/d'}
+${awayStats.name} (Visitante): Forma ${awayStats.form.results.join('-')} | Score ${awayStats.form.score}/10 | Momentum ${awayStats.momentum}% | Gols marcados/jogo: ${awayStats.goals.scored} | sofridos: ${awayStats.goals.conceded} | Tabela: ${awayStats.tablePos ? `${awayStats.tablePos}º, ${awayStats.tablePts}pts` : 'n/d'}
 
-${awayStats.name} (Visitante):
-- Forma: ${awayStats.form.results.join('-')} | Score: ${awayStats.form.score}/10 | Momentum: ${awayStats.momentum}%
-- Gols/jogo: marcados ${awayStats.goals.scored} | sofridos ${awayStats.goals.conceded}
-- Tabela: ${awayStats.tablePos ? `${awayStats.tablePos}º lugar, ${awayStats.tablePts} pts` : 'não disponível'}
+SENSOR: ${sensor.level.toUpperCase()} | Favorito: ${sensor.side === 'Casa' ? homeStats.name : awayStats.name} | Confiança: ${sensor.confidence} | Vantagem calculada: ${sensor.homeWinPct}%
 
-SENSOR: ${sensor.level.toUpperCase()} | Favorito: ${sensor.side === 'Casa' ? homeStats.name : awayStats.name} | Confiança: ${sensor.confidence} | Vantagem: ${sensor.homeWinPct}%
-RED FLAGS:
+RED FLAGS ESTATÍSTICAS (já detectadas):
 ${flagsList}
 
-Responda SOMENTE em JSON válido, sem markdown:
+INSTRUÇÕES:
+1. USE a web search para buscar notícias reais das últimas 72h sobre esses dois times
+2. Combine as notícias encontradas com os dados estatísticos acima
+3. Crie até 3 red flags ADICIONAIS baseadas nas notícias (desfalques reais, suspensões, crises)
+4. Responda SOMENTE em JSON válido, sem markdown, sem texto fora do JSON
+
+JSON esperado:
 {
-  "context": "2-3 frases diretas sobre o confronto. Use os nomes corretos.",
-  "summary": "1 frase curta e impactante.",
-  "headline": "MANCHETE EM MAIÚSCULAS, máximo 6 palavras, cite o time favorito",
-  "verdictText": "2-3 frases de veredicto. Diga qual mercado tem mais valor e por quê."
-}`;
+  "context": "2-3 frases sobre o confronto usando dados + notícias reais encontradas",
+  "summary": "1 frase impactante resumindo o cenário",
+  "headline": "MANCHETE EM MAIÚSCULAS, máximo 6 palavras",
+  "verdictText": "2-3 frases de veredicto com mercado de maior valor",
+  "newsFlags": [
+    {
+      "icon": "emoji relevante",
+      "severity": "high|mid|low",
+      "type": "injury|motivation|fatigue|table|calendar|other",
+      "title": "Título curto da notícia",
+      "text": "Descrição do impacto dessa notícia na aposta (1-2 frases)"
+    }
+  ]
+}
+Se não encontrar notícias relevantes, retorne "newsFlags": [].`;
 }
 
 // ── HANDLER PRINCIPAL ─────────────────────────────────────────
@@ -537,6 +571,10 @@ exports.handler = async function(event) {
       if (block) groqData = JSON.parse(block[0]);
     } catch { /* usa fallbacks */ }
 
+    // Mescla red flags estatísticas + red flags de notícias reais (Groq web search)
+    const newsFlags = (groqData.newsFlags || []).slice(0, 3);
+    const allRedflags = [...newsFlags, ...redflags].slice(0, 5); // notícias primeiro, máx 5
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -553,7 +591,7 @@ exports.handler = async function(event) {
           level: sensor.level, side: sensor.side, favorLabel: sensor.side,
           bestMarket: sensor.bestMarket, bestMarketValue: sensor.bestMarketValue,
           bestMarketEdge: 'pos', dangerMarket: sensor.dangerMarket,
-          caution: redflags.some(f => f.severity === 'high') ? 'alto' : redflags.some(f => f.severity === 'mid') ? 'moderado' : 'leve',
+          caution: allRedflags.some(f => f.severity === 'high') ? 'alto' : allRedflags.some(f => f.severity === 'mid') ? 'moderado' : 'leve',
           winPct: sensor.homeWinPct,
           winDesc: `${sensor.side === 'Casa' ? homeStats.name : awayStats.name} com ${sensor.homeWinPct}% de vantagem calculada`,
           goalsPct: Math.min(Math.round(parseFloat(sensor.avgGoals) / 4 * 100), 95),
@@ -570,10 +608,10 @@ exports.handler = async function(event) {
           awayTablePts: awayStats.tablePts,
         },
         summary: groqData.summary || `${sensor.side === 'Casa' ? homeStats.name : awayStats.name} parte como favorito.`,
-        redflags, odds,
+        redflags: allRedflags, odds,
         verdict: {
           headline: groqData.headline || (sensor.level === 'forte' ? `${(sensor.side === 'Casa' ? homeStats.name : awayStats.name).toUpperCase()} DOMINA` : 'JOGO INDEFINIDO'),
-          tags: buildTags(sensor, redflags),
+          tags: buildTags(sensor, allRedflags),
           text: groqData.verdictText || `Radar aponta ${sensor.side === 'Casa' ? homeStats.name : awayStats.name} com ${sensor.homeWinPct}% de vantagem.`,
         },
       }),
